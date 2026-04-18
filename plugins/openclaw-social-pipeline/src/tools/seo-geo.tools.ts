@@ -5,17 +5,16 @@
 import type { PluginContext, ToolResult } from './types.js';
 import { llmGenerate } from '../services/pipeline/llm.js';
 import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 
 let _skillPrompt: string | null = null;
 
 function loadSkillPrompt(): string {
   if (_skillPrompt) return _skillPrompt;
   try {
-    // Try to load the vendored skill
+    // CJS output: use __dirname instead of import.meta.url for Node16 compatibility
     const skillPath = resolve(
-      dirname(fileURLToPath(import.meta.url)),
+      __dirname,
       '../../skills/social-seo-geo/SKILL.md',
     );
     _skillPrompt = readFileSync(skillPath, 'utf-8');

@@ -51,7 +51,10 @@ export class ApprovalService {
   private updateRunStatus(runId: string, status: string): void {
     this.db
       .update(socialRun)
-      .set({ status, updated_at: new Date().toISOString() })
+      .set({
+        status: status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
       .where(eq(socialRun.id, runId))
       .run();
   }
@@ -99,11 +102,12 @@ export class ApprovalService {
   async approve(
     runId: string,
     reviewer: string,
-    notes?: string
+    notes?: string,
+    draftId?: string
   ): Promise<ApprovalRecord> {
     const run = this.getRun(runId);
 
-    if (run.status !== 'awaiting_approval') {
+    if ((run.status as string) !== 'awaiting_approval') {
       throw new Error(
         `Run ${runId} is not awaiting approval (current status: ${run.status})`
       );
@@ -122,10 +126,11 @@ export class ApprovalService {
     this.db.insert(socialApproval).values({
       id: record.id,
       run_id: record.run_id,
+      draft_id: draftId ?? '',
       reviewer: record.reviewer,
       decision: record.decision,
-      notes: record.notes,
-      rerun_stages: null,
+      comments: record.notes ?? '',
+      reviewed_at: record.created_at,
       created_at: record.created_at,
     }).run();
 
@@ -140,11 +145,12 @@ export class ApprovalService {
   async reject(
     runId: string,
     reviewer: string,
-    notes: string
+    notes: string,
+    draftId?: string
   ): Promise<ApprovalRecord> {
     const run = this.getRun(runId);
 
-    if (run.status !== 'awaiting_approval') {
+    if ((run.status as string) !== 'awaiting_approval') {
       throw new Error(
         `Run ${runId} is not awaiting approval (current status: ${run.status})`
       );
@@ -163,10 +169,11 @@ export class ApprovalService {
     this.db.insert(socialApproval).values({
       id: record.id,
       run_id: record.run_id,
+      draft_id: draftId ?? '',
       reviewer: record.reviewer,
       decision: record.decision,
-      notes: record.notes,
-      rerun_stages: null,
+      comments: record.notes ?? '',
+      reviewed_at: record.created_at,
       created_at: record.created_at,
     }).run();
 
@@ -183,11 +190,12 @@ export class ApprovalService {
     runId: string,
     reviewer: string,
     notes: string,
-    rerunStages?: string[]
+    rerunStages?: string[],
+    draftId?: string
   ): Promise<ApprovalRecord> {
     const run = this.getRun(runId);
 
-    if (run.status !== 'awaiting_approval') {
+    if ((run.status as string) !== 'awaiting_approval') {
       throw new Error(
         `Run ${runId} is not awaiting approval (current status: ${run.status})`
       );
@@ -206,10 +214,12 @@ export class ApprovalService {
     this.db.insert(socialApproval).values({
       id: record.id,
       run_id: record.run_id,
+      draft_id: draftId ?? '',
       reviewer: record.reviewer,
       decision: record.decision,
-      notes: record.notes,
-      rerun_stages: rerunStages ? JSON.stringify(rerunStages) : null,
+      comments: record.notes ?? '',
+      revision_notes: rerunStages ? JSON.stringify(rerunStages) : '',
+      reviewed_at: record.created_at,
       created_at: record.created_at,
     }).run();
 
@@ -220,13 +230,16 @@ export class ApprovalService {
           .update(socialRunStage)
           .set({
             status: 'pending',
-            output_json: null,
+            output_data: '{}',
             completed_at: null,
           })
           .where(
             and(
               eq(socialRunStage.run_id, runId),
-              eq(socialRunStage.stage, stage)
+              eq(
+                socialRunStage.stage_name,
+                stage as 'generate' | 'humanize' | 'psychology' | 'media' | 'approve' | 'publish' | 'analytics'
+              )
             )
           )
           .run();
@@ -242,27 +255,36 @@ export class ApprovalService {
    * List all pipeline runs currently awaiting approval.
    */
   async getPendingApprovals(): Promise<PendingApproval[]> {
+    // brief_json lives inside config_snapshot JSON per schema
     const rows = this.db
       .select({
         run_id: socialRun.id,
         campaign_id: socialRun.campaign_id,
         status: socialRun.status,
         submitted_at: socialRun.updated_at,
-        brief_json: socialRun.brief_json,
+        config_snapshot: socialRun.config_snapshot,
       })
       .from(socialRun)
-      .where(eq(socialRun.status, 'awaiting_approval'))
+      .where(eq(socialRun.status, 'awaiting_approval' as 'pending'))
       .all();
 
-    return rows.map((row) => ({
-      run_id: row.run_id as string,
-      campaign_id: (row.campaign_id as string) ?? null,
-      status: row.status as string,
-      submitted_at: row.submitted_at as string,
-      brief_json:
-        typeof row.brief_json === 'string'
-          ? JSON.parse(row.brief_json as string)
-          : row.brief_json,
-    }));
+    return rows.map((row) => {
+      let brief: unknown = null;
+      try {
+        const snapshot = row.config_snapshot
+          ? JSON.parse(row.config_snapshot as string)
+          : {};
+        brief = snapshot?.brief ?? snapshot;
+      } catch {
+        brief = null;
+      }
+      return {
+        run_id: row.run_id as string,
+        campaign_id: (row.campaign_id as string) ?? null,
+        status: row.status as string,
+        submitted_at: row.submitted_at as string,
+        brief_json: brief,
+      };
+    });
   }
 }

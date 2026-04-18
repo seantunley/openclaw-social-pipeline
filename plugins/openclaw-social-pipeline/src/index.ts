@@ -85,15 +85,15 @@ export interface OpenClawPluginContext {
     error: (msg: string, meta?: Record<string, unknown>) => void;
     debug: (msg: string, meta?: Record<string, unknown>) => void;
   };
-  registerTool: (name: string, handler: ToolHandler) => void;
+  registerTool: (factory: (ctx: unknown) => ToolHandler) => void;
   config: Record<string, unknown>;
 }
 
 export interface ToolHandler {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
-  execute: (args: Record<string, unknown>, ctx: OpenClawPluginContext) => Promise<unknown>;
+  parameters: unknown;
+  execute: (toolCallId: string, args: unknown, ctx: unknown) => Promise<unknown>;
 }
 
 // Tool name constants for consistent referencing
@@ -179,17 +179,17 @@ export function registerPlugin(ctx: OpenClawPluginContext): void {
     },
   ];
 
+  const { z } = require("zod") as typeof import("zod");
   for (const tool of toolDefinitions) {
-    ctx.registerTool(tool.name, {
+    ctx.registerTool(() => ({
       name: tool.name,
       description: tool.description,
-      parameters: {},
-      execute: async (args, toolCtx) => {
-        // Dynamic import of tool handler
+      parameters: z.object({}).passthrough(),
+      async execute(_toolCallId: string, args: unknown, toolCtx: unknown) {
         const handlerModule = await import(`./tools/${tool.name}.js`);
         return handlerModule.default(args, toolCtx, db);
       },
-    });
+    }));
     logger.debug(`Registered tool: ${tool.name}`);
   }
 
@@ -197,3 +197,6 @@ export function registerPlugin(ctx: OpenClawPluginContext): void {
     `@openclaw/social-pipeline plugin registered ${toolDefinitions.length} tools`
   );
 }
+
+export const register = registerPlugin;
+export const activate = registerPlugin;

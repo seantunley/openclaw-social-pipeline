@@ -204,12 +204,16 @@ export async function social_research_promote(
     const now = new Date().toISOString();
 
     const runId = uuidv4();
+    // campaign_id is NOT NULL in schema; research.campaign_id may be null, so require a value
+    const campaignId = params.campaign_id ?? research.campaign_id;
+    if (!campaignId) {
+      return { success: false, data: null, error: 'campaign_id is required to promote research to a run' };
+    }
     await context.db.insert(socialRun).values({
       id: runId,
-      campaign_id: params.campaign_id ?? research.campaign_id ?? null,
-      platform,
-      status: 'queued',
-      trigger: 'promoted_research',
+      campaign_id: campaignId,
+      status: 'pending',
+      trigger: 'workflow',
       config_snapshot: JSON.stringify({
         platform,
         brief: {

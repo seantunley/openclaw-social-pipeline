@@ -65,13 +65,16 @@ export async function llmGenerate(
   });
 
   // Extract text from the response content blocks
-  const textBlocks = response.content.filter(
-    (block): block is { type: 'text'; text: string } => block.type === 'text'
-  );
+  const texts: string[] = [];
+  for (const block of response.content) {
+    if (block.type === 'text') {
+      texts.push(block.text);
+    }
+  }
 
-  if (textBlocks.length === 0) {
+  if (texts.length === 0) {
     throw new Error('LLM returned no text content');
   }
 
-  return textBlocks.map((b) => b.text).join('\n');
+  return texts.join('\n');
 }

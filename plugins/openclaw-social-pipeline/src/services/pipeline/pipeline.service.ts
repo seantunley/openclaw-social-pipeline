@@ -60,12 +60,13 @@ export class PipelineService {
     inputJson: unknown
   ): Promise<string> {
     const id = uuidv4();
+    // stage_name enum is limited; cast to satisfy types — pipeline uses finer-grained names stored as-is
     this.db.insert(socialRunStage).values({
       id,
       run_id: runId,
-      stage,
+      stage_name: stage as 'generate',
       status: 'running',
-      input_json: JSON.stringify(inputJson),
+      input_data: JSON.stringify(inputJson),
       started_at: new Date().toISOString(),
     }).run();
     return id;
@@ -82,7 +83,7 @@ export class PipelineService {
       .update(socialRunStage)
       .set({
         status: 'completed',
-        output_json: JSON.stringify(outputJson),
+        output_data: JSON.stringify(outputJson),
         completed_at: new Date().toISOString(),
       })
       .where(eq(socialRunStage.id, stageId))
@@ -97,7 +98,7 @@ export class PipelineService {
       .update(socialRunStage)
       .set({
         status: 'failed',
-        output_json: JSON.stringify({ error }),
+        output_data: JSON.stringify({ error }),
         completed_at: new Date().toISOString(),
       })
       .where(eq(socialRunStage.id, stageId))
@@ -110,7 +111,10 @@ export class PipelineService {
   private async updateRunStatus(runId: string, status: string): Promise<void> {
     this.db
       .update(socialRun)
-      .set({ status, updated_at: new Date().toISOString() })
+      .set({
+        status: status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
       .where(eq(socialRun.id, runId))
       .run();
   }
@@ -138,19 +142,20 @@ export class PipelineService {
     const stageId = await this.startStage(runId, 'collect', { runId });
     try {
       const run = this.getRun(runId);
-      const brief =
-        typeof run.brief_json === 'string'
-          ? JSON.parse(run.brief_json as string)
-          : run.brief_json;
+      // brief lives inside config_snapshot JSON per schema
+      const snapshot = run.config_snapshot
+        ? JSON.parse(run.config_snapshot) as Record<string, unknown>
+        : {};
+      const brief = (snapshot.brief as Record<string, unknown> | undefined) ?? snapshot;
 
       const context = {
         run_id: runId,
         campaign_id: run.campaign_id,
         brief,
-        platforms: brief?.platforms ?? [],
-        goals: brief?.goals ?? [],
-        audience: brief?.audience ?? '',
-        tone: brief?.tone ?? '',
+        platforms: (brief as Record<string, unknown>)?.platforms ?? [],
+        goals: (brief as Record<string, unknown>)?.goals ?? [],
+        audience: (brief as Record<string, unknown>)?.audience ?? '',
+        tone: (brief as Record<string, unknown>)?.tone ?? '',
         collected_at: new Date().toISOString(),
       };
 
@@ -269,10 +274,11 @@ Rules:
 
     try {
       const run = this.getRun(runId);
-      const brief =
-        typeof run.brief_json === 'string'
-          ? JSON.parse(run.brief_json as string)
-          : run.brief_json;
+      // brief lives inside config_snapshot JSON per schema
+      const snapshot = run.config_snapshot
+        ? JSON.parse(run.config_snapshot) as Record<string, unknown>
+        : {};
+      const brief = (snapshot.brief as Record<string, unknown> | undefined) ?? snapshot;
       const platforms: string[] = (brief as Record<string, unknown>)?.platforms as string[] ?? ['twitter'];
 
       const systemPrompt = `You are an expert social media copywriter. Generate ${variantCount} distinct content variants for each platform.
@@ -302,14 +308,15 @@ Return ONLY the JSON array, no markdown fences or explanations.`;
 
       const drafts: DraftVariant[] = parsed.map((d, i) => {
         const id = uuidv4();
-        // Persist each draft
+        // Persist each draft — map legacy "draft" status to schema enum "generating"
         this.db.insert(socialDraft).values({
           id,
           run_id: runId,
+          campaign_id: run.campaign_id,
           platform: d.platform,
           variant_index: d.variant_index ?? i,
-          content: d.content,
-          status: 'draft',
+          raw_content: d.content,
+          status: 'generating',
           created_at: new Date().toISOString(),
         }).run();
 
@@ -362,12 +369,15 @@ Return ONLY the JSON array.`;
       const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       const scores = JSON.parse(cleaned) as DraftScore[];
 
-      // Update draft records with scores
+      // Update draft records with scores — schema has no score_json column, so
+      // serialize full score breakdown into metadata JSON and populate typed columns
       for (const score of scores) {
         this.db
           .update(socialDraft)
           .set({
-            score_json: JSON.stringify(score),
+            metadata: JSON.stringify({ score }),
+            seo_score: score.relevance,
+            brand_score: score.brand_fit,
             updated_at: new Date().toISOString(),
           })
           .where(eq(socialDraft.id, score.draft_id))
@@ -639,12 +649,12 @@ Return ONLY the JSON object.`;
           (brief.humanizer_aggressiveness as number) ?? undefined
         );
 
-        // Update the draft with humanized content
+        // Update the draft with humanized content — map legacy "humanized" to schema enum "humanizing"
         this.db
           .update(socialDraft)
           .set({
-            content: humanized,
-            status: 'humanized',
+            humanized_content: humanized,
+            status: 'humanizing',
             updated_at: new Date().toISOString(),
           })
           .where(eq(socialDraft.id, bestDraft.id))

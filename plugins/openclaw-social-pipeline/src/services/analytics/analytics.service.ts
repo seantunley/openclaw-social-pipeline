@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   socialRun,
   socialAnalyticsSnapshot,
+  socialPublishRecord,
 } from '../../db/schema.js';
 import type {
   SocialPublisher,
@@ -62,44 +63,41 @@ export class AnalyticsService {
     runId: string,
     postiz: SocialPublisher
   ): Promise<PostAnalytics | null> {
-    // Look up the run to find the published post ID
-    const runs = this.db
+    // Look up the publish record for this run to find the post + draft ids
+    const publishRecords = this.db
       .select()
-      .from(socialRun)
-      .where(eq(socialRun.id, runId))
+      .from(socialPublishRecord)
+      .where(eq(socialPublishRecord.run_id, runId))
       .all();
 
-    if (runs.length === 0) {
-      throw new Error(`Run not found: ${runId}`);
+    if (publishRecords.length === 0) {
+      // No published post to fetch analytics for
+      return null;
     }
 
-    const run = runs[0];
-    const postId = (run as Record<string, unknown>).postiz_post_id as string | undefined;
-
+    const pr = publishRecords[0];
+    const postId = pr.postiz_post_id ?? pr.platform_post_id;
     if (!postId) {
-      // No published post to fetch analytics for
       return null;
     }
 
     const analytics = await postiz.getPostAnalytics(postId);
 
-    // Store snapshot
-    const snapshot: AnalyticsSnapshot = {
-      id: uuidv4(),
-      run_id: runId,
-      integration_id: null,
-      type: 'post',
-      data_json: JSON.stringify(analytics),
-      captured_at: new Date().toISOString(),
-    };
-
+    // Store snapshot — schema has typed columns for metrics and a raw_data JSON blob
+    const nowIso = new Date().toISOString();
     this.db.insert(socialAnalyticsSnapshot).values({
-      id: snapshot.id,
-      run_id: snapshot.run_id,
-      integration_id: snapshot.integration_id,
-      type: snapshot.type,
-      data_json: snapshot.data_json,
-      captured_at: snapshot.captured_at,
+      id: uuidv4(),
+      publish_record_id: pr.id,
+      draft_id: pr.draft_id,
+      platform: pr.platform,
+      snapshot_at: nowIso,
+      impressions: analytics.impressions ?? 0,
+      likes: analytics.likes ?? 0,
+      shares: analytics.shares ?? 0,
+      comments: analytics.comments ?? 0,
+      clicks: analytics.clicks ?? 0,
+      engagement_rate: analytics.engagement_rate ?? 0,
+      raw_data: JSON.stringify(analytics),
     }).run();
 
     return analytics;
@@ -115,24 +113,9 @@ export class AnalyticsService {
   ): Promise<PlatformAnalytics> {
     const analytics = await postiz.getPlatformAnalytics(integrationId, range);
 
-    const snapshot: AnalyticsSnapshot = {
-      id: uuidv4(),
-      run_id: null,
-      integration_id: integrationId,
-      type: 'platform',
-      data_json: JSON.stringify(analytics),
-      captured_at: new Date().toISOString(),
-    };
-
-    this.db.insert(socialAnalyticsSnapshot).values({
-      id: snapshot.id,
-      run_id: snapshot.run_id,
-      integration_id: snapshot.integration_id,
-      type: snapshot.type,
-      data_json: snapshot.data_json,
-      captured_at: snapshot.captured_at,
-    }).run();
-
+    // Platform-level snapshots don't map cleanly to schema (which is per-post)
+    // Store as raw_data under a placeholder record-less snapshot is not possible;
+    // skip DB persistence for platform-level metrics (schema is post-scoped).
     return analytics;
   }
 
@@ -146,22 +129,31 @@ export class AnalyticsService {
     const effectiveLimit = limit ?? 10;
 
     const rows = this.db
-      .select()
+      .select({
+        id: socialAnalyticsSnapshot.id,
+        publish_record_id: socialAnalyticsSnapshot.publish_record_id,
+        snapshot_at: socialAnalyticsSnapshot.snapshot_at,
+        raw_data: socialAnalyticsSnapshot.raw_data,
+        run_id: socialPublishRecord.run_id,
+      })
       .from(socialAnalyticsSnapshot)
-      .where(eq(socialAnalyticsSnapshot.type, 'post'))
-      .orderBy(desc(socialAnalyticsSnapshot.captured_at))
+      .innerJoin(
+        socialPublishRecord,
+        eq(socialAnalyticsSnapshot.publish_record_id, socialPublishRecord.id)
+      )
+      .orderBy(desc(socialAnalyticsSnapshot.snapshot_at))
       .all();
 
     // Parse and sort by engagement_rate
     const parsed: TopPerformer[] = rows
-      .map((row) => {
+      .map((row): TopPerformer | null => {
         try {
-          const data = JSON.parse(row.data_json as string) as PostAnalytics;
+          const data = JSON.parse(row.raw_data as string) as PostAnalytics;
           return {
             id: row.id as string,
-            run_id: (row.run_id as string) ?? null,
+            run_id: (row.run_id as string | null) ?? null,
             post_analytics: data,
-            captured_at: row.captured_at as string,
+            captured_at: row.snapshot_at as string,
           };
         } catch {
           return null;
@@ -206,29 +198,32 @@ export class AnalyticsService {
       };
     }
 
-    // Fetch all post-type analytics snapshots for these runs
-    // Since drizzle-orm's inArray may not be available, we query per run
+    // Fetch all analytics snapshots for publish records belonging to these runs
     const allSnapshots: AnalyticsSnapshot[] = [];
     for (const rid of runIds) {
       const rows = this.db
-        .select()
+        .select({
+          id: socialAnalyticsSnapshot.id,
+          raw_data: socialAnalyticsSnapshot.raw_data,
+          snapshot_at: socialAnalyticsSnapshot.snapshot_at,
+          run_id: socialPublishRecord.run_id,
+        })
         .from(socialAnalyticsSnapshot)
-        .where(
-          and(
-            eq(socialAnalyticsSnapshot.run_id, rid),
-            eq(socialAnalyticsSnapshot.type, 'post')
-          )
+        .innerJoin(
+          socialPublishRecord,
+          eq(socialAnalyticsSnapshot.publish_record_id, socialPublishRecord.id)
         )
+        .where(eq(socialPublishRecord.run_id, rid))
         .all();
 
       for (const row of rows) {
         allSnapshots.push({
           id: row.id as string,
-          run_id: (row.run_id as string) ?? null,
-          integration_id: (row.integration_id as string) ?? null,
-          type: row.type as 'post' | 'platform',
-          data_json: row.data_json as string,
-          captured_at: row.captured_at as string,
+          run_id: (row.run_id as string | null) ?? null,
+          integration_id: null,
+          type: 'post',
+          data_json: row.raw_data as string,
+          captured_at: row.snapshot_at as string,
         });
       }
     }
