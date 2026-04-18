@@ -71,6 +71,26 @@
     "inbox-react": {
       "handler": "src/tools/inbox.tools.ts#social_inbox_react",
       "description": "Like or react to a post or comment on any connected platform."
+    },
+    "research-list": {
+      "handler": "src/tools/research.tools.ts#social_research_list",
+      "description": "List research findings from pipeline runs with optional filters."
+    },
+    "research-get": {
+      "handler": "src/tools/research.tools.ts#social_research_get",
+      "description": "Get full details of a research finding including sources and data."
+    },
+    "research-save": {
+      "handler": "src/tools/research.tools.ts#social_research_save",
+      "description": "Save a research finding to the library for later use."
+    },
+    "research-update-status": {
+      "handler": "src/tools/research.tools.ts#social_research_update_status",
+      "description": "Approve, reject, or archive a research finding."
+    },
+    "research-promote": {
+      "handler": "src/tools/research.tools.ts#social_research_promote",
+      "description": "Promote a research finding to a new content run."
     }
   },
 

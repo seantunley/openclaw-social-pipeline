@@ -343,6 +343,42 @@ export const socialAnalyticsSnapshot = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
+// social_research (pipeline research outputs, browsable + promotable)
+// ---------------------------------------------------------------------------
+
+export const socialResearch = sqliteTable(
+  "social_research",
+  {
+    id: text("id").primaryKey(),
+    run_id: text("run_id").references(() => socialRun.id, { onDelete: "set null" }),
+    campaign_id: text("campaign_id").references(() => socialCampaign.id, { onDelete: "set null" }),
+    topic: text("topic").notNull(),
+    title: text("title").notNull(),
+    brief: text("brief").notNull().default(""),
+    angle: text("angle").notNull().default(""),
+    why_now: text("why_now").notNull().default(""),
+    platforms: text("platforms").notNull().default("[]"), // JSON array
+    sources: text("sources").notNull().default("[]"), // JSON array [{platform, signal, url}]
+    source_summary: text("source_summary").notNull().default(""),
+    tags: text("tags").notNull().default("[]"), // JSON array
+    content_type: text("content_type", { enum: ["trend", "evergreen", "research"] }).notNull().default("research"),
+    suggested_format: text("suggested_format").notNull().default(""),
+    status: text("status", { enum: ["pending", "approved", "rejected", "promoted", "archived"] }).notNull().default("pending"),
+    promoted_run_id: text("promoted_run_id"), // if promoted to a content run
+    research_data: text("research_data").notNull().default("{}"), // full JSON blob of research output
+    researched_at: text("researched_at")
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_research_status").on(table.status),
+    index("idx_research_campaign").on(table.campaign_id),
+    index("idx_research_topic").on(table.topic),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // social_config (key-value store for plugin settings)
 // ---------------------------------------------------------------------------
 

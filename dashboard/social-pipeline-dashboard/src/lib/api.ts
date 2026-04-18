@@ -187,6 +187,30 @@ export function reactToPost(postId: string, reaction?: string) {
   });
 }
 
+// Research Library
+export function fetchResearch(status?: string) {
+  const qs = status ? `?status=${status}` : '';
+  return request<any>(`/research${qs}`);
+}
+
+export function fetchResearchItem(id: string) {
+  return request<any>(`/research/${id}`);
+}
+
+export function updateResearchStatus(id: string, status: string) {
+  return request<any>(`/research/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function promoteResearch(id: string, platform?: string) {
+  return request<any>(`/research/${id}/promote`, {
+    method: 'POST',
+    body: JSON.stringify({ platform }),
+  });
+}
+
 // Summary
 export function fetchSummary() {
   return request<any>('/summary');
