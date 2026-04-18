@@ -1,20 +1,25 @@
 {
-  "id": "@openclaw/social-pipeline",
+  "id": "openclaw-social-pipeline",
   "name": "@openclaw/social-pipeline",
   "version": "0.1.0",
   "description": "End-to-end social media content pipeline: generate, humanize, enhance with marketing psychology, produce media, schedule via Postiz, and track analytics.",
   "author": "Sean Tunley <sean@tunley.co.za>",
   "license": "MIT",
   "engine": "openclaw@>=0.1.0",
-  "entrypoint": "dist/index.js",
-
-  "config": {
-    "schema": "src/schemas/config.schema.ts"
-  },
+  "entrypoint": "dist/src/index.js",
 
   "configSchema": {
     "type": "object",
-    "additionalProperties": true
+    "additionalProperties": true,
+    "properties": {
+      "enabled": { "type": "boolean" },
+      "general": { "type": "object", "additionalProperties": true },
+      "humanizer": { "type": "object", "additionalProperties": true },
+      "marketing_psychology": { "type": "object", "additionalProperties": true },
+      "media": { "type": "object", "additionalProperties": true },
+      "postiz": { "type": "object", "additionalProperties": true },
+      "pipeline": { "type": "object", "additionalProperties": true }
+    }
   },
 
   "tools": {
