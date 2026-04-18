@@ -52,10 +52,16 @@ steps:
     stdin: $score.stdout
     timeout: 60s
 
+  - id: seo_geo
+    description: Optimize for AI search citation (GEO) and E-E-A-T
+    command: social-pipeline seo-geo-enhance --run-id $runId --platform $platform --json
+    stdin: $humanize.stdout
+    timeout: 60s
+
   - id: compliance
     description: Check brand and compliance rules
     command: social-pipeline compliance --run-id $runId --json
-    stdin: $humanize.stdout
+    stdin: $seo_geo.stdout
     timeout: 30s
 
   - id: media

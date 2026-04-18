@@ -94,6 +94,18 @@
     }
   },
 
+    "seo-geo-score": {
+      "handler": "src/tools/seo-geo.tools.ts#social_seo_geo_score",
+      "description": "Score a social post for AI search citation readiness (GEO) and E-E-A-T authority."
+    },
+    "seo-geo-enhance": {
+      "handler": "src/tools/seo-geo.tools.ts#social_seo_geo_enhance",
+      "description": "Enhance a social post for AI search citation and content authority signals."
+    },
+    "seo-geo-generate": {
+      "handler": "src/tools/seo-geo.tools.ts#social_seo_geo_generate",
+      "description": "Generate a new social post fully optimized for GEO and E-E-A-T from scratch."
+    },
     "learning-list": {
       "handler": "src/tools/learning.tools.ts#social_learning_list",
       "description": "List content learnings — patterns from edits, rejections, and analytics."
@@ -132,6 +144,10 @@
     "content-learning": {
       "path": "skills/content-learning",
       "description": "Automatically learns from post edits, approval feedback, and analytics to improve future content."
+    },
+    "social-seo-geo": {
+      "path": "skills/social-seo-geo",
+      "description": "Optimize social posts for AI search citation (GEO) and content authority (E-E-A-T)."
     }
   },
 
