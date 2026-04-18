@@ -6,12 +6,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
+    "postbuild": "bash scripts/sync-extension.sh",
+    "dev": "concurrently -k -n tsc,sync -c blue,green \"tsc --watch --preserveWatchOutput\" \"node scripts/watch-sync.mjs\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "clean": "rm -rf dist",
-    "start:api": "ts-node dashboard-api/server.ts",
+    "start:api": "node --env-file=.env dist/dashboard-api/server.js",
+    "rebuild": "npm run build",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -25,7 +27,7 @@
   "license": "MIT",
   "openclaw": {
     "extensions": [
-      "./dist/index.js"
+      "./dist/src/index.js"
     ]
   },
   "dependencies": {
@@ -42,8 +44,8 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.10.0",
     "@types/uuid": "^10.0.0",
+    "concurrently": "^8.2.2",
     "drizzle-kit": "^0.30.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.7.0"
   }
 }
