@@ -32,23 +32,38 @@ openclaw-social-pipeline/
 
 ## Install as OpenClaw Plugin
 
-Clone into your OpenClaw workspace's `plugins/` directory:
-
 ```bash
-cd your-openclaw-workspace/plugins
-git clone https://github.com/seantunley/openclaw-social-pipeline.git
-cd openclaw-social-pipeline/plugins/openclaw-social-pipeline
+# Clone into OpenClaw's plugin directory
+git clone https://github.com/seantunley/openclaw-social-pipeline ~/.openclaw/plugins/openclaw-social-pipeline
+
+# Install root workspace deps
+cd ~/.openclaw/plugins/openclaw-social-pipeline
+npm install
+
+# Build the plugin
+cd plugins/openclaw-social-pipeline
+mkdir -p dist/data                 # SQLite database lands here
+cp .env.example .env               # Fill in POSTIZ_API_KEY, ANTHROPIC_API_KEY, FAL_API_KEY
 npm install
 npm run build
+
+# Register with OpenClaw
+openclaw plugins install --dangerously-force-unsafe-install ~/.openclaw/plugins/openclaw-social-pipeline/plugins/openclaw-social-pipeline
 ```
 
-Or reference directly in your OpenClaw agent config:
+> **Note:** The `--dangerously-force-unsafe-install` flag is required because the plugin includes `child_process` calls (Postiz CLI) and network requests (Postiz API, fal.ai). This is expected behavior for a publishing pipeline.
 
-```json
-{
-  "plugins": ["./plugins/openclaw-social-pipeline"]
-}
+### Persistent Services (Linux/macOS)
+
+Copy the systemd user units from `docs/systemd/` to run the API and dashboard as background services:
+
+```bash
+cp docs/systemd/*.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now social-pipeline-api social-pipeline-dashboard
 ```
+
+The API runs on port 3000, the dashboard on port 3001.
 
 ## Local Development
 
