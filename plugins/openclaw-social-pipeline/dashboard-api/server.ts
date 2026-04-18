@@ -74,14 +74,18 @@ async function main() {
   fastify.decorate("db", db);
 
   // ── Postiz Adapter ──────────────────────────────────────────────────────────
-  const postizConfig: PostizAdapterConfig = {
-    mode: POSTIZ_MODE,
-    apiBaseUrl: POSTIZ_API_URL,
-    apiKey: POSTIZ_API_KEY,
-  };
-
-  const postiz = createPostizAdapter(postizConfig);
-  fastify.decorate("postiz", postiz);
+  try {
+    const postizConfig: PostizAdapterConfig = {
+      mode: POSTIZ_MODE,
+      apiBaseUrl: POSTIZ_API_URL,
+      apiKey: POSTIZ_API_KEY,
+    };
+    const postiz = createPostizAdapter(postizConfig);
+    (fastify as any).decorate("postiz", postiz);
+  } catch (err) {
+    fastify.log.warn("Postiz adapter init failed (missing API key?). Publishing features disabled.");
+    (fastify as any).decorate("postiz", null);
+  }
 
   // ── Routes ──────────────────────────────────────────────────────────────────
   await fastify.register(runsRoutes);
