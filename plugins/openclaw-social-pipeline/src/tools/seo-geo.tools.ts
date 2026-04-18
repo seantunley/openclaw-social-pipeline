@@ -45,10 +45,15 @@ export async function social_seo_geo_score(
     const skillPrompt = loadSkillPrompt();
 
     const response = await llmGenerate(
-      `${skillPrompt}\n\nYou are SCORING this content. Do NOT rewrite it. Only analyze and score.
-Return JSON with: geo_score (overall 0-100, plus sub-scores 0-10 for citability, authority, structure, entity_clarity, amplification),
-eeat_signals (what's present for each of experience, expertise, authoritativeness, trustworthiness),
-recommendations (specific improvements), ai_citation_readiness (low/medium/high).`,
+      `${skillPrompt}\n\nYou are SCORING this content for both SEO (platform search discoverability) and GEO (AI search citation readiness). Do NOT rewrite it. Only analyze and score.
+Return JSON with:
+- seo_score (overall 0-100, plus sub-scores 0-10 for keyword_optimization, hashtag_strategy, discoverability, technical_elements, search_intent_alignment)
+- geo_score (overall 0-100, plus sub-scores 0-10 for citability, authority, structure, entity_clarity, amplification)
+- combined_score (weighted average: SEO 50% + GEO 50%)
+- eeat_signals (what's present for each of experience, expertise, authoritativeness, trustworthiness)
+- seo_details (primary_keyword identified, secondary_keywords found, recommended_hashtags for this platform, alt_text_suggestion, search_intent_matched)
+- recommendations (specific improvements for both SEO and GEO)
+- ai_citation_readiness (low/medium/high)`,
 
       `PLATFORM: ${params.platform}\n\nCONTENT TO SCORE:\n${params.content}`,
       { temperature: 0.2 },
@@ -81,9 +86,11 @@ export async function social_seo_geo_enhance(
     const skillPrompt = loadSkillPrompt();
 
     const response = await llmGenerate(
-      `${skillPrompt}\n\nYou are ENHANCING this content for AI search citation and authority.
-Follow the platform-specific guidance. Preserve the core message and tone.
-Return JSON with: enhanced_content, geo_score (before and after), eeat_signals, changes_made, platform_optimizations, ai_citation_readiness.`,
+      `${skillPrompt}\n\nYou are ENHANCING this content for both SEO (platform search discoverability) and GEO (AI search citation).
+Follow the platform-specific SEO playbook AND GEO guidance. Preserve the core message and tone.
+Return JSON with: enhanced_content, seo_score (before and after), geo_score (before and after), combined_score,
+seo_details (primary_keyword, secondary_keywords, recommended_hashtags, alt_text_suggestion, search_intent_matched),
+eeat_signals, changes_made, platform_optimizations, ai_citation_readiness.`,
 
       `PLATFORM: ${params.platform}
 ${params.context ? `ADDITIONAL CONTEXT: ${params.context}` : ''}
@@ -130,9 +137,11 @@ export async function social_seo_geo_generate(
       : '';
 
     const response = await llmGenerate(
-      `${skillPrompt}\n\nYou are GENERATING a new social media post from scratch, optimized for AI search citation and E-E-A-T from the start.
-Follow all platform-specific guidance. Aim for high citability with specific facts.
-Return JSON with: content, geo_score, eeat_signals, platform_optimizations, ai_citation_readiness.`,
+      `${skillPrompt}\n\nYou are GENERATING a new social media post from scratch, optimized for both SEO (platform search) and GEO (AI search citation) from the start.
+Follow the platform-specific SEO playbook AND GEO guidance. Aim for high keyword relevance AND high citability.
+Return JSON with: content, seo_score, geo_score, combined_score,
+seo_details (primary_keyword, secondary_keywords, recommended_hashtags, alt_text_suggestion, search_intent_matched),
+eeat_signals, platform_optimizations, ai_citation_readiness.`,
 
       `PLATFORM: ${params.platform}
 TOPIC: ${params.topic}

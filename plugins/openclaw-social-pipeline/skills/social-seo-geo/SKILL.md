@@ -164,20 +164,184 @@ The post's potential to generate brand mentions across AI citation sources.
 - **GEO focus:** Long-form posts with factual content
 - **Best practice:** Treat like a mix of LinkedIn + Facebook.
 
+---
+
+## Social SEO — Platform Search Optimization
+
+Beyond AI citation (GEO), posts must be discoverable within each platform's internal search and algorithmic feeds. Every platform has its own search engine and discovery algorithm.
+
+### SEO Scoring Criteria for Social Posts
+
+#### 1. Keyword Optimization (25%)
+
+**What it means:** The post contains the terms people actually search for on the platform.
+
+**Strong signals:**
+- Primary keyword in the first sentence / hook
+- Natural keyword density (1-3% for long-form, present but not stuffed for short-form)
+- Semantic variations and related terms used naturally
+- Long-tail keyword phrases that match how people search on the specific platform
+- Keywords in alt text for images
+
+**Weak signals:**
+- No searchable keywords (purely conversational with no topic anchor)
+- Keyword stuffing
+- Only generic terms ("marketing", "business") with no specificity
+- Keywords only in hashtags, not in the body text
+
+**Platform differences:**
+| Platform | How search works | Keyword priority |
+|----------|-----------------|------------------|
+| LinkedIn | Full-text search of posts + profiles | First line + "About this" matters most |
+| YouTube | Title, description, tags, transcription | Title is king, description first 200 chars indexed |
+| Twitter/X | Full-text search, trending topics | Exact match matters, use the terms people search |
+| Instagram | Hashtags, alt text, captions (since 2024) | Caption text now searchable, not just hashtags |
+| TikTok | Captions, hashtags, on-screen text, audio | Caption keywords drive For You Page discovery |
+| Reddit | Title + body full-text, subreddit context | Title is critical — Reddit posts rank in Google |
+| Pinterest | Pin title, description, board names | Description keywords drive search + Google indexing |
+| VK | Full-text search + hashtags | Body text keywords + hashtag strategy |
+
+#### 2. Hashtag Strategy (15%)
+
+**Not all platforms treat hashtags equally.**
+
+| Platform | Optimal Count | Strategy |
+|----------|--------------|----------|
+| LinkedIn | 3-5 | Mix of broad (#marketing) + niche (#b2bsaas) |
+| Twitter/X | 1-2 | Fewer = better engagement. Use trending if relevant |
+| Instagram | 5-15 | Mix: 5 broad, 5 mid-tier, 5 niche. In caption, not comments |
+| TikTok | 3-5 | Trending + niche. Include in caption |
+| YouTube | 3-5 in description | Above the fold in description |
+| Reddit | 0 | Hashtags don't work on Reddit. Use subreddit targeting instead |
+| Pinterest | 0 in pin, keywords in description | Pinterest doesn't use hashtags. Pure keyword SEO |
+| VK | 3-7 | Hashtags work for discovery in VK search |
+| Bluesky | 0-2 | Minimal hashtag culture |
+| Threads | 1-3 | Light hashtag use |
+
+**Hashtag quality rules:**
+- Research actual hashtag volume (don't invent hashtags nobody searches)
+- Avoid banned or shadowbanned hashtags
+- Don't use hashtags that are too broad (millions of posts = buried)
+- Mix competition levels: 1-2 large + 2-3 medium + 1-2 niche
+- Rotate hashtags across posts (same set every time = suppressed)
+
+#### 3. Content Discoverability (20%)
+
+**How likely the platform's algorithm will surface this content.**
+
+**Strong signals:**
+- Opens with a hook that drives engagement (comments, saves, shares)
+- Contains a clear call-to-action that prompts interaction
+- Uses content format the algorithm currently favors (carousels on IG, native video on LinkedIn, etc.)
+- Optimal posting length for the platform
+- Includes media (posts with images/video get more reach)
+- Answers a question people ask (search intent alignment)
+
+**Weak signals:**
+- No engagement prompt
+- Text-only on a visual platform
+- Too long or too short for platform norms
+- External links in body (most platforms suppress external links)
+- Low-effort content (algorithm deprioritizes)
+
+#### 4. Technical SEO Elements (15%)
+
+**Often overlooked on social posts.**
+
+- **Alt text on images:** Describe the image with keywords. LinkedIn, Twitter, Instagram all support alt text. Screen readers AND search use this.
+- **Video captions/subtitles:** Auto-caption or upload SRT. Platforms index caption text for search.
+- **Link previews:** If linking out, ensure the target page has proper og:title, og:description, og:image for rich previews.
+- **Profile SEO:** Author profile bio should contain industry keywords. Posts inherit authority from profile.
+- **Geotagging:** Add location tags where relevant (Instagram, Facebook, LinkedIn). Boosts local discovery.
+- **Pin/save optimization:** On Pinterest and Instagram, saved content gets algorithmic boost. Design for save-worthiness.
+
+#### 5. Search Intent Alignment (25%)
+
+**Does this post answer something people are searching for?**
+
+**Types of search intent on social platforms:**
+| Intent | Example | Post strategy |
+|--------|---------|---------------|
+| Informational | "how to write cold emails" | Provide a clear answer/framework |
+| Navigational | "[brand name] reviews" | Ensure brand-relevant posts exist |
+| Commercial | "best CRM for startups" | Comparison posts, honest reviews |
+| Community | "anyone else struggling with X?" | Relatable content, discussion starters |
+| Trending | "[current event] impact on [industry]" | Timely takes with expert perspective |
+
+**Strong signals:**
+- Post title/hook matches a search query pattern
+- Content directly answers a question
+- Uses the same language the target audience would search with
+- Covers a topic with search volume (not just engagement bait)
+- Reddit posts especially: title should match how someone would Google the question
+
+**Weak signals:**
+- Pure personal branding with no searchable topic
+- Inside jokes or references only existing followers understand
+- Content that's engaging but not discoverable (viral ≠ searchable)
+
+### Platform-Specific SEO Playbooks
+
+#### LinkedIn SEO
+- **Search:** Full-text search indexes entire post. First line is weighted heavily.
+- **Algorithm:** Dwell time (time spent reading) is the #1 signal. Long-form with line breaks wins.
+- **Keywords:** Place primary keyword in first sentence and in a hashtag.
+- **Creator mode:** Enables "Featured" section and newsletter — both indexed.
+- **Articles vs Posts:** Articles get indexed by Google. Posts are LinkedIn-search only.
+
+#### YouTube SEO
+- **Title:** Include primary keyword. 60 chars max for full display.
+- **Description:** First 200 characters are the "above the fold" snippet. Include keyword + CTA.
+- **Tags:** 5-8 tags, primary keyword first. Include misspellings and variations.
+- **Thumbnails:** Custom thumbnails get 90% of top-performing videos. Not SEO but affects CTR which affects ranking.
+- **Chapters/Timestamps:** Help YouTube understand content structure. Each chapter can rank independently.
+- **Transcription:** YouTube auto-transcribes and indexes. Speak your keywords in the video.
+
+#### Reddit SEO
+- **Google ranks Reddit posts.** A well-titled Reddit post can outrank blog posts in Google search.
+- **Title is everything.** Write it like a search query people would type.
+- **Subreddit = topic authority.** Post in the right subreddit for topical relevance.
+- **Detailed answers get upvoted.** Upvotes = visibility in Reddit search AND Google ranking.
+- **Don't self-promote.** Reddit penalizes promotional content. Provide value.
+
+#### Instagram SEO (post-2024 update)
+- **Captions are now searchable.** Not just hashtags — Instagram indexes caption text.
+- **Alt text:** Set custom alt text on every image. Instagram uses this for search.
+- **Reels:** Audio, caption text, and on-screen text are all indexed.
+- **Location tags:** Boost discovery in Explore for local content.
+
+#### TikTok SEO
+- **Gen Z uses TikTok as a search engine.** 40% of young users search TikTok before Google.
+- **Caption keywords:** Most important ranking factor.
+- **On-screen text:** TikTok's OCR indexes text shown in videos.
+- **Trending sounds:** Using trending audio boosts algorithmic reach.
+- **Comments:** Comment keywords contribute to the post's topic signal.
+
+---
+
 ## Instructions for LLM
 
 When applying this skill to a social media draft:
 
-1. **Score the draft** against all 5 GEO criteria (citability, authority, structure, entity clarity, amplification)
-2. **Identify missing E-E-A-T signals** — which of Experience, Expertise, Authoritativeness, Trustworthiness are weak?
-3. **Rewrite or enhance** the draft to:
-   - Add at least one specific, quotable fact with a source
-   - Include a first-person experience statement if possible
-   - Ensure the first 40-60 words contain the key insight (not a question or preamble)
-   - Structure for scannability (line breaks, lists if appropriate)
-   - Use named entities instead of generic references
-4. **Preserve the core message and tone** — don't make it sound like an article. It's still a social post.
-5. **Tag which platform-specific optimizations were applied**
+**SEO pass:**
+1. Identify the primary keyword/topic the post should rank for in platform search
+2. Ensure the keyword appears in the first sentence and naturally in the body
+3. Check hashtag strategy against platform-specific rules (count, mix, relevance)
+4. Verify alt text guidance is included for any media
+5. Confirm the post answers a real search intent (not just engagement bait)
+6. Apply platform-specific SEO playbook rules
+
+**GEO pass:**
+7. Score against all 5 GEO criteria (citability, authority, structure, entity clarity, amplification)
+8. Identify missing E-E-A-T signals — which of Experience, Expertise, Authoritativeness, Trustworthiness are weak?
+9. Add at least one specific, quotable fact with a source
+10. Ensure the first 40-60 words contain the key insight (not a question or preamble)
+11. Use named entities instead of generic references
+
+**Final check:**
+12. Preserve the core message and tone — it's still a social post, not an article
+13. Tag which platform-specific optimizations were applied
+14. Generate recommended hashtags if the platform uses them
 
 ## Output Format
 
@@ -186,6 +350,14 @@ Return JSON:
 ```json
 {
   "enhanced_content": "...",
+  "seo_score": {
+    "overall": 0-100,
+    "keyword_optimization": 0-10,
+    "hashtag_strategy": 0-10,
+    "discoverability": 0-10,
+    "technical_elements": 0-10,
+    "search_intent_alignment": 0-10
+  },
   "geo_score": {
     "overall": 0-100,
     "citability": 0-10,
@@ -194,18 +366,27 @@ Return JSON:
     "entity_clarity": 0-10,
     "amplification": 0-10
   },
+  "combined_score": 0-100,
   "eeat_signals": {
     "experience": ["signal found or added"],
     "expertise": ["signal found or added"],
     "authoritativeness": ["signal found or added"],
     "trustworthiness": ["signal found or added"]
   },
+  "seo_details": {
+    "primary_keyword": "the main keyword this post targets",
+    "secondary_keywords": ["related", "terms", "used"],
+    "recommended_hashtags": ["#keyword", "#niche", "#broad"],
+    "alt_text_suggestion": "description for any accompanying image",
+    "search_intent_matched": "informational|commercial|community|trending"
+  },
   "changes_made": [
+    "Added primary keyword to first sentence",
+    "Generated 5 hashtags (2 broad + 3 niche)",
     "Added specific statistic with source",
-    "Restructured opening to lead with key insight",
-    "Added first-person experience statement"
+    "Restructured opening to lead with key insight"
   ],
-  "platform_optimizations": ["linkedin: shortened to 200 words", "added line breaks"],
+  "platform_optimizations": ["linkedin: keyword in hook + 3 hashtags", "alt text included"],
   "ai_citation_readiness": "low|medium|high"
 }
 ```
