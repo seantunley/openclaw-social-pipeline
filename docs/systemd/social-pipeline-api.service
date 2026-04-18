@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenClaw Social Pipeline API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.openclaw/plugins/openclaw-social-pipeline/plugins/openclaw-social-pipeline
+ExecStart=/usr/bin/node --env-file=.env %h/.openclaw/plugins/openclaw-social-pipeline/plugins/openclaw-social-pipeline/dist/dashboard-api/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target

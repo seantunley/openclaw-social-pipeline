@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenClaw Social Pipeline Dashboard
+After=social-pipeline-api.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.openclaw/plugins/openclaw-social-pipeline/dashboard/social-pipeline-dashboard
+ExecStart=/usr/bin/node %h/.openclaw/plugins/openclaw-social-pipeline/node_modules/.bin/vite --port 3001
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target
