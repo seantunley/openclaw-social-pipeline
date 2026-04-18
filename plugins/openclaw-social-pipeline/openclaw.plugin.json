@@ -51,6 +51,26 @@
     "get-run-status": {
       "handler": "src/tools/get-run-status.ts",
       "description": "Get detailed status of a pipeline run including all stages."
+    },
+    "inbox-status": {
+      "handler": "src/tools/inbox.tools.ts#social_inbox_status",
+      "description": "Check if the Postiz social inbox is available."
+    },
+    "inbox-list": {
+      "handler": "src/tools/inbox.tools.ts#social_inbox_list",
+      "description": "List inbox notifications — mentions, comments, likes, shares from all connected platforms."
+    },
+    "inbox-post-comments": {
+      "handler": "src/tools/inbox.tools.ts#social_inbox_post_comments",
+      "description": "Get all comments for a specific post."
+    },
+    "inbox-reply": {
+      "handler": "src/tools/inbox.tools.ts#social_inbox_reply",
+      "description": "Reply to a comment or post on any connected platform via Postiz."
+    },
+    "inbox-react": {
+      "handler": "src/tools/inbox.tools.ts#social_inbox_react",
+      "description": "Like or react to a post or comment on any connected platform."
     }
   },
 
