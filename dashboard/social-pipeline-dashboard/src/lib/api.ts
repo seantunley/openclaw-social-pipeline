@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+const BASE_URL = '/api/social';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -103,11 +103,23 @@ export function selectMedia(runId: string, assetId: string) {
 
 // Postiz
 export function fetchPostizStatus() {
-  return request<any>('/postiz/status');
+  return request<any>('/postiz/auth-status');
 }
 
 export function fetchIntegrations() {
   return request<any>('/postiz/integrations');
+}
+
+export function fetchCampaigns() {
+  return request<any>('/campaigns');
+}
+
+export function createCampaign(data: any) {
+  return request<any>('/campaigns', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function fetchCampaign(id: string) {
+  return request<any>(`/campaigns/${id}`);
 }
 
 export function uploadToPostiz(runId: string) {

@@ -6,6 +6,7 @@ import {
   socialDraft,
 } from '../../db/schema.js';
 import { llmGenerate } from './llm.js';
+import { generateImageFal, generateVideoFal, type VideoModel } from '../media/fal.service.js';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 // --------------------------------------------------------------------------
@@ -480,32 +481,45 @@ Return ONLY the JSON object.`;
   // ----------------------- stage: generate image ---------------------------
 
   /**
-   * Generates an image asset. Stub: returns a placeholder.
-   * Implement with fal.ai, DALL-E, or another provider.
+   * Generates an image asset.
+   * Uses fal.ai (nano-banana-2 with editorial prompt tuning) when provider is 'fal'.
+   * Falls back to a no-op for other providers until they are wired up.
    */
   async generateImage(
     runId: string,
     prompt: string,
-    aspectRatio?: string
+    aspectRatio?: string,
+    options?: { provider?: string; platform?: string; title?: string; body?: string; format?: string }
   ): Promise<ImageResult> {
     const stageId = await this.startStage(runId, 'generate_image', {
       prompt,
       aspect_ratio: aspectRatio,
+      provider: options?.provider,
     });
 
     try {
-      const result: ImageResult = {
-        url: '', // To be filled by actual image generation service
-        prompt,
-        aspect_ratio: aspectRatio ?? '1:1',
-      };
+      const provider = options?.provider ?? process.env.IMAGE_PROVIDER ?? 'fal';
 
-      // TODO: integrate with fal.ai / DALL-E / other image gen service
-      // Example:
-      //   const imageService = new FalService(apiKey);
-      //   result.url = await imageService.generate(prompt, aspectRatio);
+      if (provider === 'fal') {
+        const urls = await generateImageFal({
+          title: options?.title ?? prompt,
+          body: options?.body ?? prompt,
+          platform: options?.platform ?? 'linkedin',
+          aspectRatio,
+          format: options?.format,
+        });
+        const result: ImageResult = {
+          url: urls[0],
+          prompt,
+          aspect_ratio: aspectRatio ?? '1:1',
+        };
+        await this.completeStage(stageId, { ...result, all_urls: urls, provider: 'fal' });
+        return result;
+      }
 
-      await this.completeStage(stageId, result);
+      // Non-fal provider — return empty result for now
+      const result: ImageResult = { url: '', prompt, aspect_ratio: aspectRatio ?? '1:1' };
+      await this.completeStage(stageId, { ...result, provider, note: 'Provider not yet implemented' });
       return result;
     } catch (err) {
       await this.failStage(stageId, (err as Error).message);
@@ -516,35 +530,48 @@ Return ONLY the JSON object.`;
   // ----------------------- stage: generate video ---------------------------
 
   /**
-   * Generates a video asset. Stub: returns a placeholder.
-   * Implement with fal.ai Kling, Sora, or another provider.
+   * Generates a video asset.
+   * Uses fal.ai (kling-v3/wan/sora/longcat with cinematic prompt tuning) when provider is 'fal'.
    */
   async generateVideo(
     runId: string,
     prompt: string,
     aspectRatio?: string,
-    duration?: number
+    duration?: number,
+    options?: { provider?: string; platform?: string; title?: string; body?: string; model?: string }
   ): Promise<VideoResult> {
     const stageId = await this.startStage(runId, 'generate_video', {
       prompt,
       aspect_ratio: aspectRatio,
       duration,
+      provider: options?.provider,
+      model: options?.model,
     });
 
     try {
-      const result: VideoResult = {
-        url: '', // To be filled by actual video generation service
-        prompt,
-        aspect_ratio: aspectRatio ?? '16:9',
-        duration: duration ?? 15,
-      };
+      const provider = options?.provider ?? process.env.VIDEO_PROVIDER ?? 'fal';
 
-      // TODO: integrate with fal.ai Kling v3 / Wan / Sora / LongCat
-      // Example:
-      //   const videoService = new FalVideoService(apiKey);
-      //   result.url = await videoService.generate(prompt, aspectRatio, duration);
+      if (provider === 'fal') {
+        const urls = await generateVideoFal({
+          title: options?.title ?? prompt,
+          body: options?.body ?? prompt,
+          platform: options?.platform ?? 'linkedin',
+          model: (options?.model as VideoModel) ?? 'kling-v3',
+          duration: duration ?? 10,
+        });
+        const result: VideoResult = {
+          url: urls[0],
+          prompt,
+          aspect_ratio: aspectRatio ?? '16:9',
+          duration: duration ?? 10,
+        };
+        await this.completeStage(stageId, { ...result, provider: 'fal', model: options?.model ?? 'kling-v3' });
+        return result;
+      }
 
-      await this.completeStage(stageId, result);
+      // Non-fal provider — return empty result for now
+      const result: VideoResult = { url: '', prompt, aspect_ratio: aspectRatio ?? '16:9', duration: duration ?? 10 };
+      await this.completeStage(stageId, { ...result, provider, note: 'Provider not yet implemented' });
       return result;
     } catch (err) {
       await this.failStage(stageId, (err as Error).message);
