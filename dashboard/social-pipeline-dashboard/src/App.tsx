@@ -7,6 +7,7 @@ import Approvals from '@/pages/Approvals';
 import Campaigns from '@/pages/Campaigns';
 import MediaStudio from '@/pages/MediaStudio';
 import Research from '@/pages/Research';
+import Learnings from '@/pages/Learnings';
 import Schedule from '@/pages/Schedule';
 import Inbox from '@/pages/Inbox';
 import Analytics from '@/pages/Analytics';
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/approvals" element={<Approvals />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/research" element={<Research />} />
+            <Route path="/learnings" element={<Learnings />} />
             <Route path="/media-studio" element={<MediaStudio />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/inbox" element={<Inbox />} />

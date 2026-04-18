@@ -17,6 +17,7 @@ import summaryRoutes from "./routes/summary.js";
 import campaignsRoutes from "./routes/campaigns.js";
 import { inboxRoutes } from "./routes/inbox.js";
 import researchRoutes from "./routes/research.js";
+import learningsRoutes from "./routes/learnings.js";
 
 // ---------------------------------------------------------------------------
 // Fastify type augmentation
@@ -92,6 +93,7 @@ async function main() {
   await fastify.register(campaignsRoutes);
   await fastify.register(inboxRoutes, { prefix: "/api/social/inbox" });
   await fastify.register(researchRoutes);
+  await fastify.register(learningsRoutes);
 
   // ── Health check ────────────────────────────────────────────────────────────
   fastify.get("/api/social/health", async () => {

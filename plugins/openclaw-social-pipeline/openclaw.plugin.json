@@ -94,6 +94,32 @@
     }
   },
 
+    "learning-list": {
+      "handler": "src/tools/learning.tools.ts#social_learning_list",
+      "description": "List content learnings — patterns from edits, rejections, and analytics."
+    },
+    "learning-get-applicable": {
+      "handler": "src/tools/learning.tools.ts#social_learning_get_applicable",
+      "description": "Get applicable learnings for a platform, ready to inject into content prompts."
+    },
+    "learning-extract-from-edit": {
+      "handler": "src/tools/learning.tools.ts#social_learning_extract_from_edit",
+      "description": "Extract learnings by comparing original draft vs operator-edited version."
+    },
+    "learning-extract-from-feedback": {
+      "handler": "src/tools/learning.tools.ts#social_learning_extract_from_feedback",
+      "description": "Extract learnings from rejection notes or revision request feedback."
+    },
+    "learning-add-rule": {
+      "handler": "src/tools/learning.tools.ts#social_learning_add_rule",
+      "description": "Add an explicit content rule (100% confidence, never decays)."
+    },
+    "learning-deactivate": {
+      "handler": "src/tools/learning.tools.ts#social_learning_deactivate",
+      "description": "Deactivate a content learning."
+    }
+  },
+
   "skills": {
     "humanizer": {
       "path": "skills/humanizer",
@@ -102,6 +128,10 @@
     "marketing-psychology": {
       "path": "skills/marketing-psychology",
       "description": "Apply 70+ marketing psychology mental models to content."
+    },
+    "content-learning": {
+      "path": "skills/content-learning",
+      "description": "Automatically learns from post edits, approval feedback, and analytics to improve future content."
     }
   },
 

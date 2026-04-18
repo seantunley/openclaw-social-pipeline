@@ -379,6 +379,45 @@ export const socialResearch = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
+// social_learning (content learnings from edits, rejections, analytics)
+// ---------------------------------------------------------------------------
+
+export const socialLearning = sqliteTable(
+  "social_learning",
+  {
+    id: text("id").primaryKey(),
+    category: text("category", {
+      enum: [
+        "tone", "structure", "hook", "cta", "vocabulary",
+        "platform", "topic", "media", "timing", "audience",
+        "avoidance", "psychology",
+      ],
+    }).notNull(),
+    platform: text("platform"), // null = applies to all
+    campaign_id: text("campaign_id").references(() => socialCampaign.id, { onDelete: "set null" }),
+    content: text("content").notNull(), // the learning statement
+    source_type: text("source_type", {
+      enum: ["draft_edit", "rejection", "revision_request", "analytics", "operator_rule"],
+    }).notNull(),
+    source_run_id: text("source_run_id").references(() => socialRun.id, { onDelete: "set null" }),
+    confidence: real("confidence").notNull().default(0.3),
+    reinforcement_count: integer("reinforcement_count").notNull().default(1),
+    last_reinforced_at: text("last_reinforced_at")
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    tags: text("tags").notNull().default("[]"), // JSON array
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_learning_category").on(table.category),
+    index("idx_learning_platform").on(table.platform),
+    index("idx_learning_confidence").on(table.confidence),
+    index("idx_learning_active").on(table.active),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // social_config (key-value store for plugin settings)
 // ---------------------------------------------------------------------------
 

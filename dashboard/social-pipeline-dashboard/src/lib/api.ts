@@ -211,6 +211,23 @@ export function promoteResearch(id: string, platform?: string) {
   });
 }
 
+// Learnings
+export function fetchLearnings(category?: string) {
+  const qs = category ? `?category=${category}` : '';
+  return request<any>(`/learnings${qs}`);
+}
+
+export function addLearningRule(data: { category: string; content: string; platform?: string; tags?: string[] }) {
+  return request<any>('/learnings/rule', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function deactivateLearning(id: string) {
+  return request<any>(`/learnings/${id}`, { method: 'DELETE' });
+}
+
 // Summary
 export function fetchSummary() {
   return request<any>('/summary');
