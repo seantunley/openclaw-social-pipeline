@@ -53,6 +53,31 @@ openclaw plugins install --dangerously-force-unsafe-install ~/.openclaw/plugins/
 
 > **Note:** The `--dangerously-force-unsafe-install` flag is required because the plugin includes `child_process` calls (Postiz CLI) and network requests (Postiz API, fal.ai). This is expected behavior for a publishing pipeline.
 
+### Rebuild Native Bindings
+
+After `openclaw plugins install`, the `better-sqlite3` native binding may not survive the copy. Rebuild it:
+
+```bash
+cd ~/.openclaw/extensions/openclaw-social-pipeline
+npm rebuild better-sqlite3
+```
+
+### Expose Tools to Agents
+
+Tools are only available to agents that explicitly allow the plugin. Add the plugin id to each agent's `tools.alsoAllow` list:
+
+```json
+{
+  "tools": {
+    "alsoAllow": [
+      "openclaw-social-pipeline"
+    ]
+  }
+}
+```
+
+Without this, the agent cannot see or call any of the plugin's 55 tools.
+
 ### Persistent Services (Linux/macOS)
 
 Copy the systemd user units from `docs/systemd/` to run the API and dashboard as background services:
