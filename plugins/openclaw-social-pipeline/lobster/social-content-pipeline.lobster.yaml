@@ -1,0 +1,101 @@
+name: social-content-pipeline
+description: Full social media content creation pipeline from brief to publish
+
+args:
+  runId:
+    type: string
+    required: true
+  platform:
+    type: string
+    default: "linkedin"
+  mediaMode:
+    type: string
+    default: "image"
+    enum: ["image", "video", "both", "none"]
+  variantCount:
+    type: number
+    default: 3
+
+steps:
+  - id: collect
+    description: Collect and validate content brief
+    command: social-pipeline collect --run-id $runId --json
+    timeout: 30s
+
+  - id: research
+    description: Research topic, audience, and trends
+    command: social-pipeline research --run-id $runId --json
+    stdin: $collect.stdout
+    timeout: 120s
+
+  - id: psychology
+    description: Apply marketing psychology principles
+    command: social-pipeline apply-psychology --run-id $runId --json
+    stdin: $research.stdout
+    timeout: 60s
+
+  - id: draft
+    description: Generate content draft variants
+    command: social-pipeline draft --run-id $runId --variants $variantCount --json
+    stdin: $psychology.stdout
+    timeout: 120s
+
+  - id: score
+    description: Score and select best draft
+    command: social-pipeline score-select --run-id $runId --json
+    stdin: $draft.stdout
+    timeout: 60s
+
+  - id: humanize
+    description: Apply humanizer to remove AI patterns
+    command: social-pipeline humanize --run-id $runId --json
+    stdin: $score.stdout
+    timeout: 60s
+
+  - id: compliance
+    description: Check brand and compliance rules
+    command: social-pipeline compliance --run-id $runId --json
+    stdin: $humanize.stdout
+    timeout: 30s
+
+  - id: media
+    description: Generate images or videos
+    command: social-pipeline generate-media --run-id $runId --mode $mediaMode --json
+    stdin: $compliance.stdout
+    timeout: 300s
+    condition: $mediaMode != "none"
+
+  - id: approve
+    description: Submit for human approval
+    command: social-pipeline preview --run-id $runId --approve
+    stdin: $media.stdout
+    approval: required
+    timeout: 0
+
+  - id: upload
+    description: Upload media to Postiz
+    command: social-pipeline postiz-upload --run-id $runId --json
+    stdin: $media.stdout
+    condition: $approve.approved
+    timeout: 120s
+
+  - id: create_post
+    description: Create post in Postiz
+    command: social-pipeline postiz-create --run-id $runId --platform $platform --json
+    stdin: $upload.stdout
+    condition: $approve.approved
+    timeout: 60s
+
+  - id: schedule
+    description: Schedule post for publishing
+    command: social-pipeline postiz-schedule --run-id $runId --json
+    stdin: $create_post.stdout
+    condition: $approve.approved
+    timeout: 30s
+
+  - id: log
+    description: Log run completion
+    command: social-pipeline log --run-id $runId --json
+    stdin: $schedule.stdout
+    condition: $approve.approved
+    timeout: 10s

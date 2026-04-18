@@ -1,0 +1,25 @@
+name: social-analytics-sync
+description: Sync analytics from Postiz for all published posts
+
+args:
+  since:
+    type: string
+    default: "7d"
+
+steps:
+  - id: fetch_published
+    description: Get all published runs
+    command: social-pipeline list-published --since $since --json
+    timeout: 30s
+
+  - id: sync_analytics
+    description: Fetch and store analytics from Postiz
+    command: social-pipeline sync-analytics --json
+    stdin: $fetch_published.stdout
+    timeout: 300s
+
+  - id: generate_insights
+    description: Generate performance insights
+    command: social-pipeline generate-insights --json
+    stdin: $sync_analytics.stdout
+    timeout: 120s

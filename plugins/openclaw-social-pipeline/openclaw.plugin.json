@@ -1,0 +1,88 @@
+{
+  "name": "@openclaw/social-pipeline",
+  "version": "0.1.0",
+  "description": "End-to-end social media content pipeline: generate, humanize, enhance with marketing psychology, produce media, schedule via Postiz, and track analytics.",
+  "author": "Sean Tunley <sean@tunley.co.za>",
+  "license": "MIT",
+  "engine": "openclaw@>=0.1.0",
+  "entrypoint": "dist/index.js",
+
+  "config": {
+    "schema": "src/schemas/config.schema.ts"
+  },
+
+  "tools": {
+    "create-campaign": {
+      "handler": "src/tools/create-campaign.ts",
+      "description": "Create a new social media campaign with target platforms and goals."
+    },
+    "generate-drafts": {
+      "handler": "src/tools/generate-drafts.ts",
+      "description": "Generate content draft variants for a campaign across target platforms."
+    },
+    "humanize-content": {
+      "handler": "src/tools/humanize-content.ts",
+      "description": "Run the humanizer pass to remove AI writing patterns from drafts."
+    },
+    "apply-psychology": {
+      "handler": "src/tools/apply-psychology.ts",
+      "description": "Enhance drafts with marketing psychology principles and mental models."
+    },
+    "generate-media": {
+      "handler": "src/tools/generate-media.ts",
+      "description": "Generate images or video assets for social media drafts."
+    },
+    "submit-for-approval": {
+      "handler": "src/tools/submit-for-approval.ts",
+      "description": "Submit finalized drafts for human review and approval."
+    },
+    "publish-content": {
+      "handler": "src/tools/publish-content.ts",
+      "description": "Publish approved content to platforms via Postiz CLI or API."
+    },
+    "sync-analytics": {
+      "handler": "src/tools/sync-analytics.ts",
+      "description": "Pull analytics snapshots from Postiz for published content."
+    },
+    "list-campaigns": {
+      "handler": "src/tools/list-campaigns.ts",
+      "description": "List campaigns with optional filters for status, platform, and date range."
+    },
+    "get-run-status": {
+      "handler": "src/tools/get-run-status.ts",
+      "description": "Get detailed status of a pipeline run including all stages."
+    }
+  },
+
+  "skills": {
+    "humanizer": {
+      "path": "skills/humanizer",
+      "description": "AI pattern detection and rewriting skill for natural-sounding content."
+    },
+    "marketing-psychology": {
+      "path": "skills/marketing-psychology",
+      "description": "Apply 70+ marketing psychology mental models to content."
+    }
+  },
+
+  "workflows": {
+    "full-pipeline": {
+      "path": "lobster/full-pipeline.lobster",
+      "description": "Complete content pipeline: generate → humanize → psychology → media → approve → publish."
+    },
+    "quick-post": {
+      "path": "lobster/quick-post.lobster",
+      "description": "Streamlined single-post flow skipping approval for pre-approved templates."
+    },
+    "analytics-sync": {
+      "path": "lobster/analytics-sync.lobster",
+      "description": "Scheduled analytics pull and nightly summary generation."
+    }
+  },
+
+  "database": {
+    "type": "sqlite",
+    "schema": "src/db/schema.ts",
+    "migrations": "drizzle"
+  }
+}

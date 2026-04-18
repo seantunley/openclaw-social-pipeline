@@ -1,0 +1,25 @@
+name: social-daily-content
+description: Daily automated content generation from campaign backlogs
+
+args:
+  maxRuns:
+    type: number
+    default: 5
+
+steps:
+  - id: scan_campaigns
+    description: Find active campaigns with pending content needs
+    command: social-pipeline scan-campaigns --json
+    timeout: 30s
+
+  - id: create_runs
+    description: Create content runs from campaign queue
+    command: social-pipeline batch-create-runs --max $maxRuns --json
+    stdin: $scan_campaigns.stdout
+    timeout: 60s
+
+  - id: execute_pipelines
+    description: Execute content pipelines for new runs
+    command: social-pipeline batch-execute --json
+    stdin: $create_runs.stdout
+    timeout: 1800s

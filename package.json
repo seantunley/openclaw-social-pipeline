@@ -1,0 +1,22 @@
+{
+  "name": "openclaw-social-pipeline-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenClaw Social Media Content Pipeline — plugin + dashboard workspace",
+  "workspaces": [
+    "plugins/openclaw-social-pipeline",
+    "dashboard/social-pipeline-dashboard"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:dashboard\"",
+    "dev:api": "cd plugins/openclaw-social-pipeline && npm run start:api",
+    "dev:dashboard": "cd dashboard/social-pipeline-dashboard && npm run dev",
+    "build": "npm run build:plugin && npm run build:dashboard",
+    "build:plugin": "cd plugins/openclaw-social-pipeline && npm run build",
+    "build:dashboard": "cd dashboard/social-pipeline-dashboard && npm run build",
+    "install:all": "npm install && cd plugins/openclaw-social-pipeline && npm install && cd ../../dashboard/social-pipeline-dashboard && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
