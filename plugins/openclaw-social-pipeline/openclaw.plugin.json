@@ -24,44 +24,148 @@
 
   "tools": {
     "create-campaign": {
-      "handler": "src/tools/create-campaign.ts",
+      "handler": "src/tools/campaign.tools.ts#social_campaign_create",
       "description": "Create a new social media campaign with target platforms and goals."
     },
-    "generate-drafts": {
-      "handler": "src/tools/generate-drafts.ts",
-      "description": "Generate content draft variants for a campaign across target platforms."
+    "update-campaign": {
+      "handler": "src/tools/campaign.tools.ts#social_campaign_update",
+      "description": "Update an existing campaign."
     },
-    "humanize-content": {
-      "handler": "src/tools/humanize-content.ts",
-      "description": "Run the humanizer pass to remove AI writing patterns from drafts."
+    "create-brief": {
+      "handler": "src/tools/campaign.tools.ts#social_brief_create",
+      "description": "Create a content brief for a campaign."
     },
-    "apply-psychology": {
-      "handler": "src/tools/apply-psychology.ts",
-      "description": "Enhance drafts with marketing psychology principles and mental models."
+    "list-briefs": {
+      "handler": "src/tools/campaign.tools.ts#social_brief_list",
+      "description": "List content briefs."
     },
-    "generate-media": {
-      "handler": "src/tools/generate-media.ts",
-      "description": "Generate images or video assets for social media drafts."
+    "create-run": {
+      "handler": "src/tools/run.tools.ts#social_run_create",
+      "description": "Create a new content pipeline run."
     },
-    "submit-for-approval": {
-      "handler": "src/tools/submit-for-approval.ts",
-      "description": "Submit finalized drafts for human review and approval."
-    },
-    "publish-content": {
-      "handler": "src/tools/publish-content.ts",
-      "description": "Publish approved content to platforms via Postiz CLI or API."
-    },
-    "sync-analytics": {
-      "handler": "src/tools/sync-analytics.ts",
-      "description": "Pull analytics snapshots from Postiz for published content."
-    },
-    "list-campaigns": {
-      "handler": "src/tools/list-campaigns.ts",
-      "description": "List campaigns with optional filters for status, platform, and date range."
+    "list-runs": {
+      "handler": "src/tools/run.tools.ts#social_run_list",
+      "description": "List content runs with optional filters."
     },
     "get-run-status": {
-      "handler": "src/tools/get-run-status.ts",
+      "handler": "src/tools/run.tools.ts#social_run_get",
       "description": "Get detailed status of a pipeline run including all stages."
+    },
+    "retry-stage": {
+      "handler": "src/tools/run.tools.ts#social_run_retry_stage",
+      "description": "Retry a failed pipeline stage."
+    },
+    "cancel-run": {
+      "handler": "src/tools/run.tools.ts#social_run_cancel",
+      "description": "Cancel a content run."
+    },
+    "generate-research": {
+      "handler": "src/tools/draft.tools.ts#social_research_generate",
+      "description": "Generate topic research for a run."
+    },
+    "generate-drafts": {
+      "handler": "src/tools/draft.tools.ts#social_draft_generate",
+      "description": "Generate content draft variants."
+    },
+    "score-drafts": {
+      "handler": "src/tools/draft.tools.ts#social_draft_score",
+      "description": "Score all draft variants for a run."
+    },
+    "select-draft": {
+      "handler": "src/tools/draft.tools.ts#social_draft_select",
+      "description": "Select a draft variant."
+    },
+    "humanize-content": {
+      "handler": "src/tools/skill.tools.ts#social_apply_humanizer",
+      "description": "Run the humanizer pass to remove AI writing patterns."
+    },
+    "apply-psychology": {
+      "handler": "src/tools/skill.tools.ts#social_apply_marketing_psychology",
+      "description": "Enhance drafts with marketing psychology principles."
+    },
+    "generate-image": {
+      "handler": "src/tools/media.tools.ts#social_image_generate",
+      "description": "Generate an image for a run."
+    },
+    "generate-video": {
+      "handler": "src/tools/media.tools.ts#social_video_generate",
+      "description": "Generate a video for a run."
+    },
+    "regenerate-media": {
+      "handler": "src/tools/media.tools.ts#social_media_regenerate",
+      "description": "Regenerate a specific media asset."
+    },
+    "select-media": {
+      "handler": "src/tools/media.tools.ts#social_media_select",
+      "description": "Select a media asset for the run."
+    },
+    "submit-for-approval": {
+      "handler": "src/tools/approval.tools.ts#social_submit_for_approval",
+      "description": "Submit content for human review."
+    },
+    "approve-draft": {
+      "handler": "src/tools/approval.tools.ts#social_approve",
+      "description": "Approve content for publishing."
+    },
+    "reject-draft": {
+      "handler": "src/tools/approval.tools.ts#social_reject",
+      "description": "Reject content with feedback."
+    },
+    "request-revision": {
+      "handler": "src/tools/approval.tools.ts#social_request_revision",
+      "description": "Request revision on content."
+    },
+    "postiz-auth-status": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_auth_status",
+      "description": "Check Postiz connection status."
+    },
+    "postiz-integrations": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_integrations_list",
+      "description": "List connected Postiz platforms."
+    },
+    "postiz-upload-media": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_upload_media",
+      "description": "Upload media to Postiz."
+    },
+    "publish-content": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_create_post",
+      "description": "Create and publish a post via Postiz."
+    },
+    "schedule-content": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_schedule_post",
+      "description": "Schedule a post for future publishing."
+    },
+    "postiz-set-status": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_set_post_status",
+      "description": "Update a Postiz post status."
+    },
+    "postiz-list-posts": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_list_posts",
+      "description": "List posts in Postiz."
+    },
+    "sync-analytics": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_post_analytics",
+      "description": "Pull analytics for a published post."
+    },
+    "platform-analytics": {
+      "handler": "src/tools/postiz.tools.ts#social_postiz_platform_analytics",
+      "description": "Get platform-level analytics."
+    },
+    "config-get": {
+      "handler": "src/tools/config.tools.ts#social_config_get",
+      "description": "Get pipeline configuration."
+    },
+    "config-set": {
+      "handler": "src/tools/config.tools.ts#social_config_set",
+      "description": "Update pipeline configuration."
+    },
+    "dashboard-summary": {
+      "handler": "src/tools/config.tools.ts#social_dashboard_summary",
+      "description": "Get dashboard summary stats."
+    },
+    "pipeline-state": {
+      "handler": "src/tools/config.tools.ts#social_dashboard_pipeline_state",
+      "description": "Get current pipeline state."
     },
     "inbox-status": {
       "handler": "src/tools/inbox.tools.ts#social_inbox_status",
@@ -95,7 +199,7 @@
       "handler": "src/tools/research.tools.ts#social_research_save",
       "description": "Save a research finding to the library for later use."
     },
-    "research-update-status": {
+    "research-update": {
       "handler": "src/tools/research.tools.ts#social_research_update_status",
       "description": "Approve, reject, or archive a research finding."
     },
@@ -124,11 +228,11 @@
       "handler": "src/tools/learning.tools.ts#social_learning_get_applicable",
       "description": "Get applicable learnings for a platform, ready to inject into content prompts."
     },
-    "learning-extract-from-edit": {
+    "learning-extract-edit": {
       "handler": "src/tools/learning.tools.ts#social_learning_extract_from_edit",
       "description": "Extract learnings by comparing original draft vs operator-edited version."
     },
-    "learning-extract-from-feedback": {
+    "learning-extract-feedback": {
       "handler": "src/tools/learning.tools.ts#social_learning_extract_from_feedback",
       "description": "Extract learnings from rejection notes or revision request feedback."
     },
