@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { socialRuns, socialRunStages } from '../db/schema';
+import { socialRun as socialRuns, socialRunStage as socialRunStages } from '../db/schema';
 
 // ── Pipeline Statuses ─────────────────────────────────────────────────────────
 
@@ -159,7 +159,7 @@ export class TaskFlowController {
 
     const stages = await (this.db.select() as any)
       .from(socialRunStages)
-      .where(eq(socialRunStages.runId, runId));
+      .where(eq(socialRunStages.run_id, runId));
 
     return {
       id: run.id,
@@ -234,8 +234,8 @@ export class TaskFlowController {
       })
       .where(
         and(
-          eq(socialRunStages.runId, runId),
-          eq(socialRunStages.stageName, stageName)
+          eq(socialRunStages.run_id, runId),
+          eq(socialRunStages.stage_name, stageName as any)
         )
       );
   }
@@ -262,8 +262,8 @@ export class TaskFlowController {
       })
       .where(
         and(
-          eq(socialRunStages.runId, runId),
-          eq(socialRunStages.stageName, stageName)
+          eq(socialRunStages.run_id, runId),
+          eq(socialRunStages.stage_name, stageName as any)
         )
       );
   }
@@ -282,8 +282,8 @@ export class TaskFlowController {
       })
       .where(
         and(
-          eq(socialRunStages.runId, runId),
-          eq(socialRunStages.stageName, stageName)
+          eq(socialRunStages.run_id, runId),
+          eq(socialRunStages.stage_name, stageName as any)
         )
       );
   }
@@ -317,8 +317,8 @@ export class TaskFlowController {
       })
       .where(
         and(
-          eq(socialRunStages.runId, runId),
-          eq(socialRunStages.stageName, stageName)
+          eq(socialRunStages.run_id, runId),
+          eq(socialRunStages.stage_name, stageName as any)
         )
       );
   }
@@ -345,7 +345,7 @@ export class TaskFlowController {
       })
       .where(
         and(
-          eq(socialRunStages.runId, runId),
+          eq(socialRunStages.run_id, runId),
           sql`${socialRunStages.status} NOT IN ('completed', 'cancelled')`
         )
       );
@@ -357,14 +357,14 @@ export class TaskFlowController {
   async getRunsByStatus(status: PipelineStatus): Promise<RunState[]> {
     const runs = await (this.db.select() as any)
       .from(socialRuns)
-      .where(eq(socialRuns.status, status));
+      .where(eq(socialRuns.status, status as any));
 
     const results: RunState[] = [];
 
     for (const run of runs) {
       const stages = await (this.db.select() as any)
         .from(socialRunStages)
-        .where(eq(socialRunStages.runId, run.id));
+        .where(eq(socialRunStages.run_id, run.id));
 
       results.push({
         id: run.id,
@@ -426,7 +426,7 @@ export class TaskFlowController {
       count: sql<number>`count(*)`,
     }) as any)
       .from(socialRuns)
-      .where(eq(socialRuns.status, 'awaiting_approval'));
+      .where(eq(socialRuns.status, 'awaiting_approval' as any));
 
     const pendingApprovals = pendingResult[0]?.count ?? 0;
 
@@ -440,7 +440,7 @@ export class TaskFlowController {
       .where(
         and(
           eq(socialRuns.status, 'failed'),
-          sql`${socialRuns.updatedAt} >= ${twentyFourHoursAgo}`
+          sql`${socialRuns.updated_at} >= ${twentyFourHoursAgo}`
         )
       );
 
@@ -461,8 +461,8 @@ export class TaskFlowController {
       .from(socialRunStages)
       .where(
         and(
-          eq(socialRunStages.runId, runId),
-          eq(socialRunStages.stageName, stageName)
+          eq(socialRunStages.run_id, runId),
+          eq(socialRunStages.stage_name, stageName as any)
         )
       )
       .limit(1);
