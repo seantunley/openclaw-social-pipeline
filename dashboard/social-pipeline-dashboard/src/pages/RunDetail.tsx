@@ -37,21 +37,21 @@ import {
 } from '@/lib/api';
 import { formatDate, cn } from '@/lib/utils';
 
-const TABS = [
-  'Preview',
-  'Brief',
-  'Research',
-  'SEO/GEO',
-  'Psychology',
-  'Drafts',
-  'Humanized',
-  'Compliance',
-  'Readability',
-  'Media',
-  'Approval',
-  'Postiz State',
-  'Analytics',
+// Tabs grouped by lifecycle phase per the flow-audit recommendation.
+// Tab strip renders the groups left-to-right with subtle separators so
+// the operator's mental map matches the run's lifecycle: pipeline first,
+// then content, quality, output, lifecycle. Pipeline is new in Phase C —
+// it consolidates the running-run experience into a single live view
+// that replaces the old "land on Preview while nothing's there yet."
+const TAB_GROUPS = [
+  { label: 'Process', tabs: ['Pipeline'] as const },
+  { label: 'Content', tabs: ['Brief', 'Research', 'Psychology', 'Drafts', 'Humanized'] as const },
+  { label: 'Quality', tabs: ['SEO/GEO', 'Compliance', 'Readability'] as const },
+  { label: 'Output', tabs: ['Preview', 'Media'] as const },
+  { label: 'Lifecycle', tabs: ['Approval', 'Postiz State', 'Analytics'] as const },
 ] as const;
+
+const TABS = TAB_GROUPS.flatMap((g) => g.tabs);
 
 type Tab = (typeof TABS)[number];
 
@@ -69,7 +69,7 @@ export default function RunDetail() {
   const retryStage = useRetryStage();
   const approve = useApproveRun();
   const reject = useRejectRun();
-  const [activeTab, setActiveTab] = useState<Tab>('Preview');
+  const [activeTab, setActiveTab] = useState<Tab>('Pipeline');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   // Approval flow: after a successful approve, immediately pop the schedule
@@ -97,8 +97,12 @@ export default function RunDetail() {
       setActiveTab('Approval');
     } else if (status === 'completed') {
       setActiveTab('Analytics');
+    } else if (status === 'running' || status === 'pending') {
+      setActiveTab('Pipeline');
+    } else if (status === 'failed') {
+      setActiveTab('Pipeline');
     }
-    // else: leave on 'Preview' (the initial state).
+    // else: leave on the current default ('Pipeline').
   }, [run, tabPinned]);
 
   if (isLoading) {
@@ -138,6 +142,9 @@ export default function RunDetail() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'Pipeline':
+        return <PipelineTab run={run} runId={id!} retryStage={retryStage} />;
+
       case 'Preview': {
         return <PreviewPane run={run} runId={id!} onAction={handleAction} actionLoading={actionLoading} refetch={refetch} />;
       }
@@ -544,26 +551,43 @@ export default function RunDetail() {
         </div>
 
         <div className="lg:col-span-3 space-y-4">
-          <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveTab(tab);
-                  setTabPinned(true);
-                }}
-                className={cn(
-                  'relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
-                  activeTab === tab
-                    ? 'text-indigo-400'
-                    : 'text-zinc-500 hover:text-zinc-300'
+          {/* Tabs grouped by lifecycle phase. Visual separators between
+              groups give the operator a mental map of the run's stages
+              instead of 13 equally-weighted tabs in a flat row. */}
+          <div className="flex items-stretch border-b border-border-strong overflow-x-auto">
+            {TAB_GROUPS.map((group, gi) => (
+              <div key={group.label} className="flex items-stretch">
+                {gi > 0 && (
+                  <div className="mx-2 my-2 w-px bg-border-strong/60" aria-hidden />
                 )}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
-                )}
-              </button>
+                <div className="flex flex-col">
+                  <span className="px-2 pt-1 text-[9px] font-semibold uppercase tracking-widest text-faint">
+                    {group.label}
+                  </span>
+                  <div className="flex">
+                    {group.tabs.map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => {
+                          setActiveTab(tab);
+                          setTabPinned(true);
+                        }}
+                        className={cn(
+                          'relative px-3 pb-2 pt-0.5 text-sm font-medium whitespace-nowrap transition-colors',
+                          activeTab === tab
+                            ? 'text-brand-cyan'
+                            : 'text-muted hover:text-secondaryText'
+                        )}
+                      >
+                        {tab}
+                        {activeTab === tab && (
+                          <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-brand-purple to-brand-pink rounded-full" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 
@@ -1742,4 +1766,66 @@ function formatDuration(startIso: string, endIso: string): string {
   if (ms < 1000) return `${ms}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
   return `${Math.round(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+}
+
+// ─── Pipeline tab ───────────────────────────────────────────────────────────
+// Phase C: live process view that consolidates the 7 stages into a single
+// surface. Header shows run-level state; timeline shows stage-by-stage
+// progress; per-stage retry button visible if a stage failed. Replaces
+// the old "land on Preview while nothing exists yet" default for running
+// runs.
+
+function PipelineTab({
+  run,
+  runId,
+  retryStage,
+}: {
+  run: any;
+  runId: string;
+  retryStage: ReturnType<typeof useRetryStage>;
+}) {
+  const stageStatuses: Record<string, string> = run.stageStatuses || run.stages || {};
+  const status = run.status as string | undefined;
+  const isFailed = status === 'failed';
+  const isRunning = status === 'running' || status === 'pending';
+
+  // Headline reflects the lifecycle phase the run is currently in.
+  const headline = (() => {
+    if (isFailed) return 'Pipeline failed';
+    if (status === 'pending_approval') return 'Ready for review';
+    if (status === 'approved') return 'Approved';
+    if (status === 'completed') return 'Completed';
+    if (isRunning) return 'Running';
+    return 'Pipeline';
+  })();
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-primaryText">{headline}</p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            Run <code className="text-secondaryText">{runId}</code>
+            {run.platform && (
+              <>
+                {' '}· <span className="capitalize">{run.platform}</span>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {isFailed && run.error_message && (
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300 whitespace-pre-wrap">
+          {run.error_message}
+        </div>
+      )}
+
+      <PipelineTimeline
+        currentStage={run.currentStage}
+        stageStatuses={stageStatuses}
+        onRetry={(stage) => retryStage.mutate({ runId, stage })}
+      />
+    </div>
+  );
 }
