@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Search, Filter, X, Trash2 } from 'lucide-react';
+import { Search, Filter, X, Trash2, LayoutGrid, List } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import Toast, { type ToastKind } from '@/components/Toast';
@@ -29,6 +29,21 @@ export default function Runs() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
+  // View toggle persists across reloads. Operators who scan content
+  // (cards) or operators who scan metadata (table) shouldn't have to
+  // re-pick on every visit.
+  const [view, setView] = useState<'table' | 'cards'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (window.localStorage.getItem('runs-view') as 'table' | 'cards') ?? 'table';
+  });
+  const setViewPersist = (v: 'table' | 'cards') => {
+    setView(v);
+    try {
+      window.localStorage.setItem('runs-view', v);
+    } catch {
+      // Storage may be disabled — toggle still works for the session.
+    }
+  };
 
   const { data, isLoading } = useRuns({
     search: search || undefined,
@@ -150,6 +165,37 @@ export default function Runs() {
               </option>
             ))}
           </select>
+
+          <div className="flex items-center rounded-lg border border-border-strong bg-surface-soft p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewPersist('table')}
+              aria-label="Table view"
+              title="Table view"
+              className={cn(
+                'rounded-md p-1.5',
+                view === 'table'
+                  ? 'bg-surface-medium text-primaryText'
+                  : 'text-muted hover:text-secondaryText',
+              )}
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPersist('cards')}
+              aria-label="Card view"
+              title="Card view"
+              className={cn(
+                'rounded-md p-1.5',
+                view === 'cards'
+                  ? 'bg-surface-medium text-primaryText'
+                  : 'text-muted hover:text-secondaryText',
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -193,6 +239,16 @@ export default function Runs() {
         />
       )}
 
+      {view === 'cards' ? (
+        <RunsCardGrid
+          runs={runs as any[]}
+          isLoading={isLoading}
+          busy={busy}
+          onCancel={(id) => cancelRun.mutate(id)}
+          onDelete={(id) => setConfirmState({ kind: 'delete-one', id })}
+          t={t}
+        />
+      ) : (
       <div className="rounded-xl border border-border-strong overflow-hidden">
         <table className="w-full">
           <thead>
@@ -297,6 +353,125 @@ export default function Runs() {
           </tbody>
         </table>
       </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Card grid view ─────────────────────────────────────────────────────────
+// Alternate to the table for operators who scan content rather than
+// metadata. Same data, different shape — the Status / Platform / Created
+// info is still here, but the card leads with the campaign and a content
+// preview if available.
+
+function RunsCardGrid({
+  runs,
+  isLoading,
+  busy,
+  onCancel,
+  onDelete,
+  t,
+}: {
+  runs: any[];
+  isLoading: boolean;
+  busy: string | null;
+  onCancel: (id: string) => void;
+  onDelete: (id: string) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const navigate = useNavigate();
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-44 rounded-xl border border-border-strong bg-surface-soft animate-skeleton-pulse"
+          />
+        ))}
+      </div>
+    );
+  }
+  if (runs.length === 0) {
+    return (
+      <div className="rounded-xl border border-border-strong p-12 text-center text-sm text-muted">
+        {t('runs.empty')}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {runs.map((run) => {
+        const id = run.id || run._id;
+        const preview =
+          run.humanizedContent ||
+          run.humanized ||
+          run.drafts?.[0]?.final_content ||
+          run.drafts?.[0]?.humanized_content ||
+          run.drafts?.[0]?.raw_content ||
+          run.brief?.topic ||
+          run.topic ||
+          '';
+        const canCancel = ['running', 'pending', 'pending_approval'].includes(run.status);
+        const canDelete = ['cancelled', 'failed', 'completed'].includes(run.status);
+        return (
+          <button
+            key={id}
+            onClick={() => navigate(`/runs/${id}`)}
+            className="text-left rounded-xl border border-border-strong bg-surface-soft p-4 hover:bg-surface-medium transition-colors flex flex-col gap-3"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-primaryText truncate">
+                  {run.campaign || run.campaignName || id.slice(0, 16)}
+                </p>
+                <p className="text-[11px] text-muted capitalize">
+                  {run.platform || '—'} · {formatDate(run.createdAt)}
+                </p>
+              </div>
+              <StatusBadge status={run.status} />
+            </div>
+            {preview && (
+              <p className="text-sm text-secondaryText line-clamp-3">{preview}</p>
+            )}
+            <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+              <span className="text-[10px] text-faint">
+                {run.scheduledAt ? `Scheduled ${formatDate(run.scheduledAt)}` : ''}
+              </span>
+              <div className="flex items-center gap-1">
+                {canCancel && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCancel(id);
+                    }}
+                    className="rounded-md px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-500/10"
+                  >
+                    {t('runs.actions.cancel')}
+                  </span>
+                )}
+                {canDelete && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(id);
+                    }}
+                    aria-disabled={busy === `delete:${id}`}
+                    className="rounded-md p-1 text-muted hover:bg-red-500/10 hover:text-red-400"
+                    title={t('runs.actions.delete_title')}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

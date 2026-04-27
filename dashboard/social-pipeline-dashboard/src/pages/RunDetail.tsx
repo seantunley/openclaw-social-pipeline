@@ -25,6 +25,8 @@ import ScheduleModal from '@/components/ScheduleModal';
 import type { PlatformId } from '@/lib/platforms';
 import { useRun, useRetryStage, useRuns } from '@/hooks/useRuns';
 import { useApproveRun, useRejectRun } from '@/hooks/useApprovals';
+import { useQuery } from '@tanstack/react-query';
+import { fetchEnvStatus } from '@/lib/api';
 import {
   regenerateDraft,
   regenerateMedia,
@@ -67,6 +69,19 @@ export default function RunDetail() {
     .map((r) => r.id || r._id)
     .find((rid) => rid && rid !== id) as string | undefined;
   const retryStage = useRetryStage();
+  // Hide the Postiz State tab when Postiz isn't connected — it's a raw
+  // JSON debug surface that's empty until POSTIZ_API_KEY is set, and an
+  // empty debug tab reads as broken to non-developer operators.
+  const { data: envStatus } = useQuery({
+    queryKey: ['env-status'],
+    queryFn: fetchEnvStatus,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const postizConnected = (envStatus?.postiz ?? []).some(
+    (v) => v.name === 'POSTIZ_API_KEY' && v.set,
+  );
+  const visibleTabs = TABS.filter((tab) => tab !== 'Postiz State' || postizConnected);
   const approve = useApproveRun();
   const reject = useRejectRun();
   const [activeTab, setActiveTab] = useState<Tab>('Preview');
@@ -512,6 +527,32 @@ export default function RunDetail() {
               Run {(id || '').slice(0, 8)}
             </h1>
             <StatusBadge status={run.status} />
+            {/* Persistent stage badge while the pipeline is in flight.
+                Drops out the moment the run reaches a terminal state so
+                we don't claim "running stage X" forever. */}
+            {(run.status === 'running' || run.status === 'pending') && (() => {
+              const stages = ['generate', 'psychology', 'humanize', 'media', 'approve', 'publish', 'analytics'];
+              const labels: Record<string, string> = {
+                generate: 'Researching',
+                psychology: 'Marketing psychology',
+                humanize: 'Humanizing',
+                media: 'Generating media',
+                approve: 'Awaiting approval',
+                publish: 'Publishing',
+                analytics: 'Analytics sync',
+              };
+              const ss = (run.stageStatuses || run.stages || {}) as Record<string, string>;
+              const current =
+                run.currentStage ||
+                stages.find((s) => ss[s] === 'running' || ss[s] === 'in_progress') ||
+                stages.find((s) => !['completed', 'failed', 'skipped'].includes(ss[s]));
+              const idx = current ? stages.indexOf(current) + 1 : null;
+              return current ? (
+                <span className="rounded-full border border-brand-purple/40 bg-brand-purple/10 px-2.5 py-0.5 text-[11px] font-medium text-brand-cyan">
+                  {idx ? `Stage ${idx}/${stages.length} · ` : ''}{labels[current] || current}
+                </span>
+              ) : null;
+            })()}
           </div>
           <div className="mt-1 flex items-center gap-3 text-sm text-muted">
             {run.platform && <span className="capitalize">{run.platform}</span>}
@@ -545,7 +586,7 @@ export default function RunDetail() {
 
         <div className="lg:col-span-3 space-y-4">
           <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
