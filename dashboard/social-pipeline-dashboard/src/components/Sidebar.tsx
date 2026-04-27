@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useT, useLocale, LOCALES } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
+import { useSummary } from '@/hooks/useSummary';
+import { useQuery } from '@tanstack/react-query';
+import { fetchEnvStatus } from '@/lib/api';
 import Flag from './Flag';
 import {
   LayoutDashboard,
@@ -77,6 +80,28 @@ const UTILITY_ITEMS: NavItem[] = [
 
 export default function Sidebar() {
   const t = useT();
+  // Hide pages that depend on Postiz until it's actually configured. Until
+  // POSTIZ_API_KEY is set, Inbox (engagement events) and Analytics (post
+  // performance) are dead links. Cheaper to hide than to show empty states
+  // that read as broken.
+  const { data: envStatus } = useQuery({
+    queryKey: ['env-status'],
+    queryFn: fetchEnvStatus,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const postizConnected = (envStatus?.postiz ?? []).some(
+    (v) => v.name === 'POSTIZ_API_KEY' && v.set,
+  );
+
+  const visibleGroups = GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((item) => {
+      // Inbox needs Postiz to surface engagement events.
+      if (item.to === '/inbox' && !postizConnected) return false;
+      return true;
+    }),
+  }));
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-card border-r border-border">
@@ -97,7 +122,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
-        {GROUPS.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.headingKey}>
             <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
               {t(group.headingKey)}
@@ -137,6 +162,12 @@ export default function Sidebar() {
 function SidebarLink({ item }: { item: NavItem }) {
   const t = useT();
   const Icon = item.icon;
+  // Pull the pending-approval count from the summary so the Approvals link
+  // can surface a badge. The hook polls every 30s, which is fine — this is
+  // ambient awareness, not a precise gauge.
+  const { data: summary } = useSummary();
+  const isApprovalsLink = item.to === '/approvals';
+  const pendingCount = isApprovalsLink ? Number(summary?.pendingApproval ?? 0) : 0;
   return (
     <NavLink
       to={item.to}
@@ -151,7 +182,12 @@ function SidebarLink({ item }: { item: NavItem }) {
       }
     >
       <Icon className="h-4 w-4 flex-shrink-0" />
-      {t(item.labelKey)}
+      <span className="flex-1">{t(item.labelKey)}</span>
+      {pendingCount > 0 && (
+        <span className="rounded-full bg-brand-purple/20 px-2 py-0.5 text-[10px] font-semibold text-brand-cyan ring-1 ring-brand-purple/40">
+          {pendingCount}
+        </span>
+      )}
     </NavLink>
   );
 }
