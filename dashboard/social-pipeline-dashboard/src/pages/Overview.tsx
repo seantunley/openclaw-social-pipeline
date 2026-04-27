@@ -1,4 +1,5 @@
-import { Play, Clock, CalendarDays, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Play, Clock, CalendarDays, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
@@ -52,9 +53,61 @@ export default function Overview() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Overview</h1>
+        <h1 className="text-2xl font-bold text-primaryText">Overview</h1>
         <p className="mt-1 text-sm text-muted">Pipeline performance at a glance</p>
       </div>
+
+      {/* Phase E: "What needs your attention" — surfaces actionable
+          counts at the top of the page so the operator's first read is
+          "what should I work on now," not "here are stats." Hidden when
+          there's nothing pending. */}
+      {(summary.pendingApproval > 0 || (summary.recentFailures || []).length > 0) && (
+        <div className="rounded-xl border border-brand-purple/30 bg-brand-purple/5 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-brand-cyan">
+              Needs your attention
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {summary.pendingApproval > 0 && (
+              <Link
+                to="/approvals"
+                className="group flex items-center justify-between rounded-lg border border-border-strong bg-surface-faint px-4 py-3 hover:bg-surface-soft transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-amber-400" />
+                  <div>
+                    <p className="text-sm font-medium text-primaryText">
+                      {summary.pendingApproval} pending approval
+                      {summary.pendingApproval === 1 ? '' : 's'}
+                    </p>
+                    <p className="text-[11px] text-muted">Review and schedule</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted group-hover:text-secondaryText" />
+              </Link>
+            )}
+            {(summary.recentFailures || []).length > 0 && (
+              <Link
+                to="/runs?status=failed"
+                className="group flex items-center justify-between rounded-lg border border-border-strong bg-surface-faint px-4 py-3 hover:bg-surface-soft transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                  <div>
+                    <p className="text-sm font-medium text-primaryText">
+                      {(summary.recentFailures || []).length} recent failure
+                      {(summary.recentFailures || []).length === 1 ? '' : 's'}
+                    </p>
+                    <p className="text-[11px] text-muted">Investigate or re-trigger</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted group-hover:text-secondaryText" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

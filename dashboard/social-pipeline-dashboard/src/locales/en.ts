@@ -18,6 +18,8 @@ const en = {
       create: 'Create',
       engage: 'Engage',
       configure: 'Configure',
+      brand: 'Brand',
+      tuning: 'Tuning',
     },
     overview: 'Overview',
     runs: 'Runs',

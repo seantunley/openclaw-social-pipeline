@@ -63,11 +63,20 @@ const GROUPS: NavGroup[] = [
       { to: '/analytics', icon: BarChart3, labelKey: 'nav.analytics' },
     ],
   },
+  // Phase E split: "Brand" is set-once configuration (voice, campaigns —
+  // touched rarely after onboarding). "Tuning" is recurring (review the
+  // learnings extracted from edits/rejections). Grouping them differently
+  // makes the recurring review surface easier to find.
   {
-    headingKey: 'nav.groups.configure',
+    headingKey: 'nav.groups.brand',
     items: [
       { to: '/brand', icon: Sparkles, labelKey: 'nav.brand' },
       { to: '/campaigns', icon: Megaphone, labelKey: 'nav.campaigns' },
+    ],
+  },
+  {
+    headingKey: 'nav.groups.tuning',
+    items: [
       { to: '/learnings', icon: Brain, labelKey: 'nav.learnings' },
     ],
   },

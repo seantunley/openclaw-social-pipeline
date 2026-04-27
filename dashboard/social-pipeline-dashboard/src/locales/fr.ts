@@ -18,6 +18,8 @@ const fr = {
       create: 'Créer',
       engage: 'Interagir',
       configure: 'Configurer',
+      brand: 'Marque',
+      tuning: 'Réglage',
     },
     overview: 'Vue d\'ensemble',
     runs: 'Exécutions',
