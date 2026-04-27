@@ -2,9 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * Theme tokens
+ * ─────────────────────────────────────────────────────────────────────────
+ * Tokens live as CSS custom properties so theme switching is a single
+ * className flip on <html> with no JS rerender. Tailwind utilities like
+ * `bg-app`, `border-border`, `text-muted` resolve to these vars (see
+ * tailwind.config). Brand gradient colors stay literal — they're an
+ * identity element and shouldn't drift between themes.
+ */
+
+:root,
+.theme-dark {
+  --bg-app: #040814;
+  --bg-card: #0c1020;
+  --bg-elevated: #15192e;
+  --bg-input: rgba(0, 0, 0, 0.4);
+
+  --border-default: #1e2238;
+  --border-strong: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #d4d4d8;
+  --text-muted: #8a8db0;
+  --text-faint: #52525b;
+
+  --accent: #9270c8;
+  --accent-fg: #ffffff;
+
+  --scrollbar-track: #09090b;
+  --scrollbar-thumb: #27272a;
+  --scrollbar-thumb-hover: #3f3f46;
+
+  /* Subtle overlays used for hovers, dividers, faint surfaces. In dark
+   * mode these are slightly-transparent white; in light they flip to
+   * slightly-transparent black so they read against a light background. */
+  --surface-faint: rgba(255, 255, 255, 0.03);
+  --surface-soft: rgba(255, 255, 255, 0.05);
+  --surface-medium: rgba(255, 255, 255, 0.1);
+}
+
+.theme-light {
+  --bg-app: #f7f7fb;
+  --bg-card: #ffffff;
+  --bg-elevated: #f2f2f7;
+  --bg-input: #ffffff;
+
+  --border-default: #e4e4ea;
+  --border-strong: rgba(0, 0, 0, 0.12);
+
+  --text-primary: #0c1020;
+  --text-secondary: #2c2f3f;
+  --text-muted: #5e6378;
+  --text-faint: #9095a8;
+
+  --accent: #6f4dab;
+  --accent-fg: #ffffff;
+
+  --scrollbar-track: #f2f2f7;
+  --scrollbar-thumb: #c8c9d3;
+  --scrollbar-thumb-hover: #a8a9b3;
+
+  --surface-faint: rgba(0, 0, 0, 0.025);
+  --surface-soft: rgba(0, 0, 0, 0.04);
+  --surface-medium: rgba(0, 0, 0, 0.07);
+}
+
 body {
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -16,19 +82,19 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--scrollbar-thumb-hover);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #27272a #09090b;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

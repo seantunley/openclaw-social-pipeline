@@ -1,0 +1,49 @@
+{
+  "name": "social-pipeline-engine",
+  "version": "0.2.0",
+  "description": "Social media content engine — research, drafting, SEO/GEO optimization, humanizer, marketing psychology, media generation, Postiz publishing. Driven by a Telegram bot and surfaced through a React dashboard.",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "clean": "rm -rf dist",
+    "start:api": "node --env-file=.env dist/dashboard-api/server.js",
+    "start:bot": "node --env-file=.env dist/src/bot/index.js",
+    "rebuild": "npm run build"
+  },
+  "keywords": [
+    "social-media",
+    "content-pipeline",
+    "telegram-bot",
+    "postiz",
+    "seo",
+    "geo",
+    "marketing"
+  ],
+  "author": "Sean Tunley <sean@tunley.co.za>",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
+    "@fal-ai/client": "^1.9.5",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/multipart": "^10.0.0",
+    "@mariozechner/pi-ai": "^0.70.2",
+    "adm-zip": "^0.5.17",
+    "better-sqlite3": "^12.9.0",
+    "drizzle-orm": "^0.39.0",
+    "fastify": "^5.0.0",
+    "telegraf": "^4.16.3",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.7.0"
+  }
+}

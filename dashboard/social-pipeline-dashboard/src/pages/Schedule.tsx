@@ -47,15 +47,15 @@ function CalendarItem({ item, compact }: { item: any; compact?: boolean }) {
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: 'schedule',
-      item: { id: item.id, scheduledAt: item.scheduled_for || item.created_at },
+      item: { id: item.id, scheduledAt: item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at },
       collect: (monitor) => ({ opacity: monitor.isDragging() ? 0.3 : 1 }),
     }),
-    [item.id, item.scheduled_for]
+    [item.id, item.scheduledAt, item.scheduled_for]
   );
 
   const platformColor = PLATFORM_COLORS[item.platform] ?? PLATFORM_COLORS.default;
   const status = STATUS_STYLES[item.status] ?? STATUS_STYLES.pending;
-  const scheduledAt = item.scheduled_for || item.created_at;
+  const scheduledAt = item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at;
 
   if (compact) {
     return (
@@ -175,7 +175,7 @@ function WeekView({
 
   const getItems = (day: dayjs.Dayjs, hour: number) =>
     items.filter((item) => {
-      const d = dayjs(item.scheduled_for || item.created_at);
+      const d = dayjs(item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at);
       return d.isSame(day, 'day') && d.hour() === hour;
     });
 
@@ -271,7 +271,7 @@ function WeekCell({
 function ListView({ items }: { items: any[] }) {
   const grouped: Record<string, any[]> = {};
   for (const item of items) {
-    const day = dayjs(item.scheduled_for || item.created_at).format('YYYY-MM-DD');
+    const day = dayjs(item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at).format('YYYY-MM-DD');
     (grouped[day] ??= []).push(item);
   }
   const sortedDays = Object.keys(grouped).sort();
@@ -310,17 +310,20 @@ export default function SchedulePage() {
   const loadCalendar = useCallback(() => {
     setLoading(true);
     // Fetch all scheduled + published runs and treat them as calendar items
+    // Pull every status the calendar cares about. Real DB statuses are
+    // pending|scheduled|running|completed|failed|cancelled plus the soft
+    // `pending_approval` value the pipeline sets after the media stage.
     Promise.all([
       fetchRuns({ status: 'scheduled' }).catch(() => []),
-      fetchRuns({ status: 'published' }).catch(() => []),
-      fetchRuns({ status: 'awaiting_approval' }).catch(() => []),
+      fetchRuns({ status: 'pending_approval' }).catch(() => []),
+      fetchRuns({ status: 'completed' }).catch(() => []),
     ])
-      .then(([scheduled, published, pending]) => {
+      .then(([scheduled, pendingApproval, completed]) => {
         const all = [
           ...(Array.isArray(scheduled) ? scheduled : []),
-          ...(Array.isArray(published) ? published : []),
-          ...(Array.isArray(pending) ? pending : []),
-        ];
+          ...(Array.isArray(pendingApproval) ? pendingApproval : []),
+          ...(Array.isArray(completed) ? completed : []),
+        ].filter((r) => r.scheduledAt || r.scheduled_for); // calendar only shows runs that have a scheduled time
         setItems(all);
       })
       .catch(() => setItems([]))
@@ -346,7 +349,7 @@ export default function SchedulePage() {
   };
 
   const getItemsForDay = (day: dayjs.Dayjs) =>
-    items.filter((item) => dayjs(item.scheduled_for || item.created_at).isSame(day, 'day'));
+    items.filter((item) => dayjs(item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at).isSame(day, 'day'));
 
   // Month view: build 42-cell grid (6 weeks)
   const monthStart = currentDate.startOf('month');

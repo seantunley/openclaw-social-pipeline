@@ -12,6 +12,9 @@ import Schedule from '@/pages/Schedule';
 import Inbox from '@/pages/Inbox';
 import Analytics from '@/pages/Analytics';
 import Settings from '@/pages/Settings';
+import Trash from '@/pages/Trash';
+import BrandVoice from '@/pages/BrandVoice';
+import Composer from '@/pages/Composer';
 
 export default function App() {
   return (
@@ -32,6 +35,9 @@ export default function App() {
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/trash" element={<Trash />} />
+            <Route path="/brand" element={<BrandVoice />} />
+            <Route path="/composer" element={<Composer />} />
           </Routes>
         </div>
       </main>

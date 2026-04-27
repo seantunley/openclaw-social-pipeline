@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,11 +7,22 @@ import {
   CheckCircle2,
   XCircle,
   Image as ImageIcon,
+  Pencil,
+  Save,
+  Play,
+  Activity,
+  TrendingUp,
+  ShieldCheck,
+  BookOpen,
 } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import PipelineTimeline from '@/components/PipelineTimeline';
 import DraftCard from '@/components/DraftCard';
 import MediaCard from '@/components/MediaCard';
+import PostPreview from '@/components/PostPreview';
+import BeforeAfter from '@/components/BeforeAfter';
+import ScheduleModal from '@/components/ScheduleModal';
+import type { PlatformId } from '@/lib/platforms';
 import { useRun, useRetryStage } from '@/hooks/useRuns';
 import { useApproveRun, useRejectRun } from '@/hooks/useApprovals';
 import {
@@ -20,16 +31,22 @@ import {
   selectDraft,
   selectMedia,
   uploadToPostiz,
+  editDraft,
+  rerunRun,
+  improveReadability,
 } from '@/lib/api';
 import { formatDate, cn } from '@/lib/utils';
 
 const TABS = [
+  'Preview',
   'Brief',
   'Research',
+  'SEO/GEO',
   'Psychology',
   'Drafts',
   'Humanized',
   'Compliance',
+  'Readability',
   'Media',
   'Approval',
   'Postiz State',
@@ -45,8 +62,14 @@ export default function RunDetail() {
   const retryStage = useRetryStage();
   const approve = useApproveRun();
   const reject = useRejectRun();
-  const [activeTab, setActiveTab] = useState<Tab>('Brief');
+  const [activeTab, setActiveTab] = useState<Tab>('Preview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Approval flow: after a successful approve, immediately pop the schedule
+  // modal so the operator picks WHEN this approved post should publish.
+  // Run status stays 'approved' through the modal; scheduled_at column
+  // captures the publish time.
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -67,11 +90,15 @@ export default function RunDetail() {
 
   const handleAction = async (action: string, fn: () => Promise<any>) => {
     setActionLoading(action);
+    setActionError(null);
     try {
       await fn();
       refetch();
     } catch (err) {
+      // Surface the failure visibly — silent failure is the anti-pattern.
+      const message = err instanceof Error ? err.message : String(err);
       console.error(err);
+      setActionError(`${action} failed: ${message}`);
     } finally {
       setActionLoading(null);
     }
@@ -81,6 +108,9 @@ export default function RunDetail() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'Preview': {
+        return <PreviewPane run={run} runId={id!} onAction={handleAction} actionLoading={actionLoading} refetch={refetch} />;
+      }
       case 'Brief':
         return (
           <div className="prose prose-invert max-w-none">
@@ -103,17 +133,39 @@ export default function RunDetail() {
           </div>
         );
 
-      case 'Psychology':
+      case 'SEO/GEO':
+        return <SeoGeoTab run={run} />;
+
+      case 'Readability':
+        return <ReadabilityTab run={run} runId={id!} refetch={refetch} />;
+
+      case 'Psychology': {
+        const psy = run.psychology;
+        // New shape: { before, after, principlesApplied, changes }
+        // Old shape (legacy): a plain string of the enhanced text.
+        if (psy && typeof psy === 'object' && 'after' in psy) {
+          return (
+            <BeforeAfter
+              beforeLabel="Pre-psychology draft"
+              afterLabel="After psychology pass"
+              before={psy.before}
+              after={psy.after}
+              appliedLabel="Principles applied"
+              applied={psy.principlesApplied ?? []}
+              changes={psy.changes ?? []}
+            />
+          );
+        }
+        // Fallback for older runs that have only the enhanced string.
         return (
-          <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-white/5 rounded-lg p-4 border border-white/10">
-              {typeof run.psychology === 'string'
-                ? run.psychology
-                : JSON.stringify(run.psychology || run.psychologyAnalysis, null, 2) ||
-                  'No psychology analysis yet'}
-            </pre>
-          </div>
+          <BeforeAfter
+            beforeLabel="Pre-psychology draft"
+            afterLabel="After psychology pass"
+            before={null}
+            after={typeof psy === 'string' ? psy : null}
+          />
         );
+      }
 
       case 'Drafts': {
         const drafts = run.drafts || [];
@@ -156,17 +208,30 @@ export default function RunDetail() {
         );
       }
 
-      case 'Humanized':
+      case 'Humanized': {
+        const det = run.humanizedDetail;
+        if (det && (det.before || det.after)) {
+          return (
+            <BeforeAfter
+              beforeLabel="Pre-humanizer (post-psychology)"
+              afterLabel="After humanizer"
+              before={det.before}
+              after={det.after}
+              appliedLabel="AI patterns removed"
+              applied={det.patternsRemoved ?? []}
+              changes={det.changes ?? []}
+            />
+          );
+        }
         return (
-          <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-white/5 rounded-lg p-4 border border-white/10">
-              {typeof run.humanized === 'string'
-                ? run.humanized
-                : JSON.stringify(run.humanized || run.humanizedContent, null, 2) ||
-                  'No humanized content yet'}
-            </pre>
-          </div>
+          <BeforeAfter
+            beforeLabel="Pre-humanizer (post-psychology)"
+            afterLabel="After humanizer"
+            before={null}
+            after={typeof run.humanized === 'string' ? run.humanized : null}
+          />
         );
+      }
 
       case 'Compliance':
         return (
@@ -198,48 +263,23 @@ export default function RunDetail() {
         );
 
       case 'Media': {
-        const media = run.media || run.mediaAssets || [];
+        const media = (run.media || run.mediaAssets || []) as any[];
+        // Show only the most-recent ('hosted') assets by default; superseded
+        // ones from prior regenerations are kept in DB but hidden here.
+        const visible = media.filter((m: any) => (m.status ?? 'hosted') !== 'superseded');
         return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted">{media.length} media asset(s)</p>
-              <button
-                onClick={() =>
-                  handleAction('regenerateMedia', () => regenerateMedia(id!))
-                }
-                disabled={actionLoading === 'regenerateMedia'}
-                className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={cn(
-                    'h-3.5 w-3.5',
-                    actionLoading === 'regenerateMedia' && 'animate-spin'
-                  )}
-                />
-                Regenerate Media
-              </button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {media.map((asset: any) => (
-                <MediaCard
-                  key={asset.id || asset._id}
-                  asset={asset}
-                  selected={
-                    asset.selected || run.selectedMediaId === (asset.id || asset._id)
-                  }
-                  onSelect={(aId) =>
-                    handleAction('selectMedia', () => selectMedia(id!, aId))
-                  }
-                />
-              ))}
-            </div>
-            {media.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
-                <ImageIcon className="h-10 w-10 mb-3" />
-                <p className="text-sm">No media generated yet</p>
-              </div>
-            )}
-          </div>
+          <MediaTab
+            runId={id!}
+            assets={visible}
+            selectedMediaId={run.selectedMediaId}
+            actionLoading={actionLoading}
+            onRegenerate={(prompt) =>
+              handleAction('regenerateMedia', () => regenerateMedia(id!, prompt))
+            }
+            onSelect={(aId) =>
+              handleAction('selectMedia', () => selectMedia(id!, aId))
+            }
+          />
         );
       }
 
@@ -259,35 +299,107 @@ export default function RunDetail() {
               )}
             </div>
             {run.status === 'pending_approval' && (
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button
-                  onClick={() =>
-                    handleAction('approve', () =>
-                      approve.mutateAsync({ id: id!, data: {} })
-                    )
-                  }
+                  onClick={async () => {
+                    // Approve, then open the scheduling modal so the
+                    // operator picks a publish time. Approve happens first
+                    // (atomic) so even if the modal is dismissed the run
+                    // is marked approved — scheduled_at can be set later
+                    // from the calendar drag-and-drop.
+                    setActionLoading('approve');
+                    setActionError(null);
+                    try {
+                      await approve.mutateAsync({
+                        id: id!,
+                        data: { notes: 'Approved from dashboard' },
+                      });
+                      refetch();
+                      setScheduleOpen(true);
+                    } catch (err) {
+                      setActionError(`approve failed: ${(err as Error).message}`);
+                    } finally {
+                      setActionLoading(null);
+                    }
+                  }}
                   disabled={!!actionLoading}
                   className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Approve
+                  Approve & schedule {actionLoading === 'approve' && '…'}
                 </button>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    // Reject must carry a note — that's both an engine
+                    // requirement and the input the rule-extractor uses to
+                    // turn rejections into binding rules for future runs.
+                    const notes = window.prompt(
+                      'Why is this being rejected?\n(This becomes a learning rule for future runs.)',
+                    );
+                    if (!notes || !notes.trim()) return;
                     handleAction('reject', () =>
-                      reject.mutateAsync({
-                        id: id!,
-                        data: { reason: 'Rejected from detail view' },
-                      })
-                    )
-                  }
+                      reject.mutateAsync({ id: id!, data: { notes: notes.trim() } }),
+                    );
+                  }}
                   disabled={!!actionLoading}
                   className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="h-4 w-4" />
-                  Reject
+                  Reject {actionLoading === 'reject' && '…'}
                 </button>
               </div>
+            )}
+            {/* Approved but not yet scheduled: surface a "Schedule publish"
+                button so the operator can pick a time without re-approving.
+                We accept either run.status='approved' or approvalStatus from
+                the draft — older runs were left in 'running' by a bug, but
+                their draft is correctly marked approved. */}
+            {(run.status === 'approved' || run.approvalStatus === 'approved') && !run.scheduledAt && (
+              <button
+                onClick={() => setScheduleOpen(true)}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-pink px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Schedule publish
+              </button>
+            )}
+            {/* Already scheduled: show the time and let the operator change it. */}
+            {(run.status === 'approved' || run.approvalStatus === 'approved') && run.scheduledAt && (
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-zinc-200 font-medium">
+                    Scheduled to publish {new Date(run.scheduledAt).toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    Approved · {new Date(run.scheduledAt).toLocaleString(undefined, { weekday: 'long' })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setScheduleOpen(true)}
+                  className="text-xs text-zinc-300 underline hover:text-white"
+                >
+                  Change time
+                </button>
+              </div>
+            )}
+            {actionError && (
+              <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300 whitespace-pre-wrap">
+                {actionError}
+              </div>
+            )}
+
+            {scheduleOpen && (
+              <ScheduleModal
+                mode={{ kind: 'schedule-approved', runId: id! }}
+                activePlatform={(run.platform || 'linkedin') as PlatformId}
+                onClose={() => setScheduleOpen(false)}
+                onScheduled={() => {
+                  setScheduleOpen(false);
+                  refetch();
+                }}
+                onError={(msg) => setActionError(`schedule failed: ${msg}`)}
+              />
             )}
           </div>
         );
@@ -368,7 +480,7 @@ export default function RunDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
           <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
             <h3 className="text-sm font-semibold text-zinc-100 mb-4">Pipeline Progress</h3>
             <PipelineTimeline
@@ -379,6 +491,8 @@ export default function RunDetail() {
               }
             />
           </div>
+          <AnalysisBlock run={run} />
+          <ActivityBlock stages={run.stages || []} />
         </div>
 
         <div className="lg:col-span-3 space-y-4">
@@ -409,4 +523,1172 @@ export default function RunDetail() {
       </div>
     </div>
   );
+}
+
+// ─── Media tab (with editable prompt + regenerate) ───────────────────────
+
+interface MediaTabProps {
+  runId: string;
+  assets: any[];
+  selectedMediaId?: string;
+  actionLoading: string | null;
+  onRegenerate: (prompt?: string) => void;
+  onSelect: (assetId: string) => void;
+}
+
+function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSelect }: MediaTabProps) {
+  // Pull the prompt from the first hosted asset; that's the most recent
+  // generation's editorial prompt. Operator edits are local-only until
+  // they hit "Regenerate", at which point the new prompt is sent to the
+  // engine and persisted on the resulting assets.
+  const seed = assets[0]?.prompt ?? '';
+  const [prompt, setPrompt] = useState<string>(seed);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const dirty = prompt.trim() !== seed.trim();
+  const busy = actionLoading === 'regenerateMedia';
+
+  // Keep the editor in sync when the run reloads with new assets (e.g.
+  // after a successful regenerate).
+  useEffect(() => {
+    setPrompt(seed);
+  }, [seed]);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPrompt((v) => !v)}
+            className="text-xs text-zinc-400 hover:text-zinc-200"
+          >
+            {showPrompt ? '▾' : '▸'} Generation prompt {dirty && <span className="text-amber-400 ml-1">(edited)</span>}
+          </button>
+          <div className="flex items-center gap-2">
+            {dirty && (
+              <button
+                type="button"
+                onClick={() => setPrompt(seed)}
+                className="text-xs text-zinc-500 hover:text-zinc-300"
+              >
+                Reset
+              </button>
+            )}
+            <button
+              onClick={() => onRegenerate(dirty ? prompt.trim() : undefined)}
+              disabled={busy}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-pink px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', busy && 'animate-spin')} />
+              {dirty ? 'Regenerate with edited prompt' : 'Regenerate'}
+            </button>
+          </div>
+        </div>
+        {showPrompt && (
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={
+              assets.length === 0
+                ? 'No prompt yet. Generate media first, or type a prompt to use for the first run.'
+                : 'Edit the editorial prompt and click Regenerate.'
+            }
+            rows={6}
+            className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+          />
+        )}
+        <p className="text-[11px] text-zinc-500">
+          {assets.length} asset(s). Editing the prompt and regenerating produces a new image; previous ones become superseded but stay in the database.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {assets.map((asset: any) => (
+          <MediaCard
+            key={asset.id || asset._id}
+            asset={asset}
+            selected={asset.selected || selectedMediaId === (asset.id || asset._id)}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+      {assets.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+          <ImageIcon className="h-10 w-10 mb-3" />
+          <p className="text-sm">No media generated yet</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Preview pane (with edit + rerun) ─────────────────────────────────────
+
+interface PreviewPaneProps {
+  run: any;
+  runId: string;
+  onAction: (action: string, fn: () => Promise<any>) => Promise<void>;
+  actionLoading: string | null;
+  refetch: () => void;
+}
+
+function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPaneProps) {
+  const drafts = run.drafts || [];
+  const primary = drafts.find((d: any) => d.selected) ?? drafts[0];
+  const media = run.media || run.mediaAssets || [];
+  const primaryMedia = media.find((m: any) => m.selected) ?? media[0];
+
+  const initialContent =
+    primary?.content || primary?.finalContent || primary?.humanizedContent || primary?.rawContent || '';
+
+  const [editing, setEditing] = useState(false);
+  const [draftText, setDraftText] = useState(initialContent);
+  const [note, setNote] = useState('');
+  const [lastResult, setLastResult] = useState<{ kind: 'edit' | 'rerun'; data: any } | null>(null);
+
+  if (!primary) {
+    return (
+      <p className="text-sm text-zinc-500 py-12 text-center">
+        No draft yet — wait for the pipeline to finish or generate one.
+      </p>
+    );
+  }
+
+  const startEdit = () => {
+    setDraftText(initialContent);
+    setNote('');
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setDraftText(initialContent);
+    setNote('');
+  };
+
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'edit' | 'rerun' | null>(null);
+
+  const saveEdit = async () => {
+    setActionError(null);
+    setBusy('edit');
+    try {
+      const result = await editDraft(runId, draftText, note || undefined);
+      if (!result.learning_ids?.length) {
+        throw new Error('Endpoint returned 200 but saved no rules — check engine logs');
+      }
+      setLastResult({ kind: 'edit', data: result });
+      setEditing(false);
+      refetch();
+    } catch (err) {
+      setActionError(`Save failed: ${(err as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Bypasses the parent's handleAction (which catches errors via console.error
+  // and never surfaces them). We need direct control so the user sees what
+  // happened — success or failure — every time.
+  const runAgain = async () => {
+    setActionError(null);
+    setLastResult({ kind: 'rerun', data: { message: 'Starting…', applicable_learnings: 0 } });
+    setBusy('rerun');
+    try {
+      const result = await rerunRun(runId);
+      setLastResult({ kind: 'rerun', data: result });
+      refetch();
+    } catch (err) {
+      setLastResult(null);
+      setActionError(`Run again failed: ${(err as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wider text-zinc-500">
+          How the post will appear on {run.platform || 'the platform'}
+        </p>
+        <div className="flex items-center gap-2">
+          {!editing && (
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </button>
+          )}
+          <button
+            onClick={runAgain}
+            disabled={busy === 'rerun' || lastResult?.kind === 'rerun'}
+            className="flex items-center gap-2 rounded-lg bg-indigo-500/15 border border-indigo-500/30 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Create a new run with the same brief; active learnings will be applied"
+          >
+            <Play className={cn('h-3.5 w-3.5', busy === 'rerun' && 'animate-spin')} />
+            {busy === 'rerun' ? 'Starting…' : lastResult?.kind === 'rerun' ? 'Started' : 'Run Again'}
+          </button>
+        </div>
+      </div>
+
+      {/* Feedback banners live RIGHT BELOW THE BUTTON ROW so the operator
+          sees the result without having to scroll past a long post. */}
+      {actionError && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+          <p className="font-medium">{actionError}</p>
+          <p className="mt-1 text-xs text-red-300/70">
+            Open browser console (F12) → Network tab to see the request/response. Or check the engine API logs.
+          </p>
+        </div>
+      )}
+
+      {lastResult?.kind === 'rerun' && (
+        <div className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 p-4 text-sm text-indigo-200">
+          <p className="font-medium">{lastResult.data.message}</p>
+          <p className="mt-1 text-xs text-indigo-200/80">
+            {lastResult.data.applicable_learnings} active rule
+            {lastResult.data.applicable_learnings === 1 ? '' : 's'} loaded.
+            A new run is processing in the background — check the Runs list in ~30s.
+          </p>
+        </div>
+      )}
+
+      {lastResult?.kind === 'edit' && Array.isArray(lastResult.data?.rules_extracted) && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
+          <p className="font-medium text-emerald-300">
+            {lastResult.data.rules_extracted.length} rule(s) saved — future runs will follow them.
+          </p>
+          <ul className="mt-2 space-y-1 text-emerald-200/80">
+            {lastResult.data.rules_extracted.map((r: { category: string; content: string }, i: number) => (
+              <li key={i}>
+                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                  {r.category}
+                </span>{' '}
+                {r.content}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {editing ? (
+        <div className="space-y-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4">
+          <p className="text-xs text-indigo-300">
+            Edit the post below. On save, Claude diffs your edit against the model's draft and
+            extracts structured rules — every future run on {run.platform} will follow them.
+          </p>
+          <textarea
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            rows={Math.min(20, Math.max(8, draftText.split('\n').length + 2))}
+            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional: tell the bot WHY you changed this (becomes a stronger rule)"
+            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <div className="flex items-center justify-between gap-2">
+            {(() => {
+              const textChanged = draftText.trim() !== initialContent.trim();
+              const hasNote = note.trim().length > 0;
+              const canSave = textChanged || hasNote;
+              return (
+                <p className="text-[11px] text-zinc-500">
+                  {!canSave && 'Edit the text or add a note to enable Save.'}
+                  {canSave && textChanged && hasNote && 'Will save text changes + note as rules.'}
+                  {canSave && textChanged && !hasNote && 'Will diff the edit and extract rules from it.'}
+                  {canSave && !textChanged && hasNote && 'Will save your note as a rule (no text change).'}
+                </p>
+              );
+            })()}
+            <div className="flex gap-2">
+              <button
+                onClick={cancelEdit}
+                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={
+                  busy === 'edit' ||
+                  (draftText.trim() === initialContent.trim() && note.trim().length === 0)
+                }
+                className="flex items-center gap-2 rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {busy === 'edit' ? 'Extracting rules…' : 'Save & Learn'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <PostPreview
+          platform={run.platform || 'generic'}
+          content={initialContent}
+          mediaUrl={primaryMedia?.url || null}
+          brandName={run.campaign || 'Your Brand'}
+          brandHandle={(run.campaign || 'yourbrand').toLowerCase().replace(/\s+/g, '_')}
+        />
+      )}
+
+      {lastResult?.kind === 'edit' && Array.isArray(lastResult.data?.rules_extracted) && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm">
+          <p className="font-medium text-emerald-300">
+            {lastResult.data.rules_extracted.length} rule(s) saved — future runs on {run.platform} will follow them.
+          </p>
+          <ul className="mt-2 space-y-1 text-emerald-200/80">
+            {lastResult.data.rules_extracted.map((r: any, i: number) => (
+              <li key={i}>
+                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                  {r.category}
+                </span>{' '}
+                {r.content}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ─── Readability tab ────────────────────────────────────────────────────
+
+type Metric = 'flesch' | 'grade';
+
+function ReadabilityTab({
+  run,
+  runId,
+  refetch,
+}: {
+  run: any;
+  runId: string;
+  refetch: () => void;
+}) {
+  const drafts = (run.drafts ?? []) as any[];
+  const primary = drafts.find((d) => d.selected) ?? drafts[0];
+  const original: string =
+    primary?.finalContent || primary?.content || run.humanized || '';
+
+  const [improved, setImproved] = useState<string | null>(null);
+  const [changes, setChanges] = useState<string[]>([]);
+  const [busy, setBusy] = useState<'improve' | 'aggressive' | 'accept-original' | 'accept-improved' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [metric, setMetric] = useState<Metric>('flesch');
+
+  const originalScore = original ? fleschReadingEase(original) : null;
+  const improvedScore = improved ? fleschReadingEase(improved) : null;
+
+  const onImprove = async (mode: 'standard' | 'aggressive' = 'standard') => {
+    setBusy(mode === 'aggressive' ? 'aggressive' : 'improve');
+    setError(null);
+    try {
+      // For "push harder" we feed the current improved text back in so the
+      // aggressive pass starts from the already-simplified version.
+      const seed = mode === 'aggressive' ? improved ?? undefined : undefined;
+      const res = await improveReadability(runId, { content: seed, mode });
+      setImproved(res.improved);
+      setChanges(res.changes ?? []);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onAccept = async (which: 'original' | 'improved') => {
+    if (which === 'improved' && !improved) return;
+    setBusy(which === 'original' ? 'accept-original' : 'accept-improved');
+    setError(null);
+    try {
+      const content = which === 'improved' ? improved! : original;
+      await editDraft(runId, content, `accepted readability=${which}`);
+      setImproved(null);
+      setChanges([]);
+      refetch();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (!original) {
+    return (
+      <p className="text-sm text-zinc-500 py-8 text-center">
+        No content yet — readability needs a finalised draft.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Metric toggle + target band header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-sm font-semibold text-zinc-100">Readability</p>
+          <p className="text-[11px] text-zinc-500">
+            Scoring system:{' '}
+            <span className="text-zinc-300">
+              {metric === 'flesch'
+                ? 'Flesch Reading Ease (0-100, higher = easier)'
+                : 'Flesch–Kincaid Grade Level (US school grade)'}
+            </span>
+            <span className="mx-2 text-zinc-700">·</span>
+            Target:{' '}
+            <span className="text-emerald-400">
+              {metric === 'flesch' ? '60+ (plain)' : 'grade 8 or below'}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-white/10 bg-white/5 p-0.5 text-[11px]">
+          <button
+            onClick={() => setMetric('flesch')}
+            className={cn(
+              'px-2 py-1 rounded',
+              metric === 'flesch' ? 'bg-white/10 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
+            )}
+          >
+            Flesch
+          </button>
+          <button
+            onClick={() => setMetric('grade')}
+            className={cn(
+              'px-2 py-1 rounded',
+              metric === 'grade' ? 'bg-white/10 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
+            )}
+          >
+            Grade level
+          </button>
+        </div>
+      </div>
+
+      {/* Score + explanation */}
+      <ReadabilityCard label="Current readability" score={originalScore} metric={metric} />
+      <ReadabilityExplanation score={originalScore} metric={metric} />
+
+      {/* Improve action */}
+      {improved == null ? (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm text-zinc-200 font-medium">Improve readability</p>
+            <p className="text-[11px] text-zinc-500">
+              One LLM pass. Shorter sentences, simpler words. Facts and citations preserved exactly.
+            </p>
+          </div>
+          <button
+            onClick={() => onImprove('standard')}
+            disabled={!!busy}
+            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-brand-purple to-brand-pink px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', busy === 'improve' && 'animate-spin')} />
+            Generate improved version
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Side-by-side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <VersionCard
+              label="Original"
+              score={originalScore}
+              metric={metric}
+              content={original}
+              tone="neutral"
+              onAccept={() => onAccept('original')}
+              busy={busy === 'accept-original'}
+              acceptLabel="Keep original"
+            />
+            <VersionCard
+              label="Improved"
+              score={improvedScore}
+              metric={metric}
+              content={improved}
+              tone={
+                improvedScore && originalScore && improvedScore.score > originalScore.score
+                  ? 'better'
+                  : 'worse'
+              }
+              onAccept={() => onAccept('improved')}
+              busy={busy === 'accept-improved'}
+              acceptLabel="Accept improved"
+              delta={
+                originalScore && improvedScore
+                  ? improvedScore.score - originalScore.score
+                  : null
+              }
+            />
+          </div>
+
+          {/* Change log */}
+          {changes.length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs font-semibold text-zinc-200 mb-2">Edits applied</p>
+              <ul className="space-y-1">
+                {changes.map((c, i) => (
+                  <li key={i} className="text-[11px] text-zinc-400 flex gap-2">
+                    <span className="text-brand-cyan">·</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Push harder + discard row */}
+          <div className="flex items-center justify-between flex-wrap gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-zinc-200 font-medium">Still too hard?</p>
+              <p className="text-[11px] text-zinc-500">
+                Push harder applies aggressive caps: 14-word sentence max, replace 3+ syllable words, no subordinate clauses. Iterates from the current improved version.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setImproved(null);
+                  setChanges([]);
+                }}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300"
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => onImprove('aggressive')}
+                disabled={!!busy}
+                className="flex items-center gap-2 rounded-md bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/30 disabled:opacity-50"
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', busy === 'aggressive' && 'animate-spin')} />
+                Push harder for simplicity
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Flesch–Kincaid Grade Level — same word/sentence/syllable inputs, returns
+// a US school-grade number. Useful when "20 / very hard" doesn't tell the
+// operator how much simpler the text needs to get.
+function fleschKincaidGrade(words: number, sentences: number, syllables: number): number {
+  if (words === 0) return 0;
+  return 0.39 * (words / Math.max(1, sentences)) + 11.8 * (syllables / words) - 15.59;
+}
+
+// Wrapper that returns either a Flesch score or a grade-level number based
+// on the chosen metric. The tone (good/warn/bad) flips for grade level —
+// higher Flesch is better, lower grade is better.
+function getMetricView(score: ReturnType<typeof fleschReadingEase> | null, metric: Metric) {
+  if (!score) return null;
+  // Re-derive syllables from the Flesch formula (we already have words+sentences).
+  // Flesch = 206.835 − 1.015×(W/S) − 84.6×(Syl/W) → Syl = ((206.835 − Flesch − 1.015×W/S) × W) / 84.6
+  const wps = score.words / Math.max(1, score.sentences);
+  const syllablesPerWord = (206.835 - score.score - 1.015 * wps) / 84.6;
+  const syllables = Math.round(syllablesPerWord * score.words);
+
+  if (metric === 'grade') {
+    const grade = fleschKincaidGrade(score.words, score.sentences, syllables);
+    const tone = grade <= 8 ? 'good' : grade <= 12 ? 'warn' : 'bad';
+    const label = `Grade ${grade.toFixed(1)}`;
+    const sub = grade <= 6 ? 'elementary' : grade <= 8 ? 'middle school' : grade <= 12 ? 'high school' : grade <= 16 ? 'college' : 'graduate';
+    // Bar: invert grade onto a 0-100 scale for visual consistency. Grade 0 = 100%, grade 18+ = 0%.
+    const barPct = Math.max(0, Math.min(100, 100 - (grade / 18) * 100));
+    return { tone, label, sub, barPct, primary: grade.toFixed(1) };
+  }
+  const tone = score.score >= 60 ? 'good' : score.score >= 40 ? 'warn' : 'bad';
+  return {
+    tone,
+    label: score.grade,
+    sub: '',
+    barPct: Math.min(100, Math.max(0, score.score)),
+    primary: Math.round(score.score).toString(),
+  };
+}
+
+function ReadabilityCard({
+  label,
+  score,
+  metric,
+}: {
+  label: string;
+  score: ReturnType<typeof fleschReadingEase> | null;
+  metric: Metric;
+}) {
+  if (!score) return null;
+  const view = getMetricView(score, metric);
+  if (!view) return null;
+  const color = { good: 'text-emerald-400', warn: 'text-amber-400', bad: 'text-red-400' }[view.tone];
+  const bar = { good: 'bg-emerald-500/60', warn: 'bg-amber-500/60', bad: 'bg-red-500/60' }[view.tone];
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">{label}</p>
+      <div className="mt-2 flex items-baseline gap-3">
+        <span className={cn('text-3xl font-semibold tabular-nums', color)}>{view.primary}</span>
+        <span className="text-sm text-zinc-300 capitalize">{view.label}</span>
+        {view.sub && <span className="text-xs text-zinc-500">· {view.sub}</span>}
+      </div>
+      <div className="mt-2 h-1 w-full rounded-full bg-white/5 overflow-hidden">
+        <div className={cn('h-full transition-all', bar)} style={{ width: `${view.barPct}%` }} />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+        <Stat label="Words" value={score.words} />
+        <Stat label="Sentences" value={score.sentences} />
+        <Stat label="Words/sentence" value={(score.words / Math.max(1, score.sentences)).toFixed(1)} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-md bg-black/30 border border-white/5 px-2 py-1.5">
+      <p className="text-zinc-500">{label}</p>
+      <p className="text-zinc-200 font-medium tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function ReadabilityExplanation({
+  score,
+  metric,
+}: {
+  score: ReturnType<typeof fleschReadingEase> | null;
+  metric: Metric;
+}) {
+  void metric;
+  if (!score) return null;
+  const wps = score.words / Math.max(1, score.sentences);
+  const reasons: string[] = [];
+
+  if (wps > 22) reasons.push(`Long sentences — averaging ${wps.toFixed(1)} words/sentence (target <20).`);
+  else if (wps < 12) reasons.push(`Very short sentences — averaging ${wps.toFixed(1)} words/sentence (clipped feel).`);
+
+  // syllables/word approximation: re-derive from score (Flesch formula reversed)
+  const spw = (206.835 - score.score - 1.015 * wps) / 84.6;
+  if (spw > 1.7) reasons.push(`Complex word choices — ~${spw.toFixed(2)} syllables/word (target <1.5). Watch for Latinate words like "utilize", "facilitate", "leverage".`);
+  else if (spw < 1.3) reasons.push(`Very simple word choices (~${spw.toFixed(2)} syllables/word) — appropriate for casual platforms.`);
+
+  if (score.score >= 70) reasons.push('Easy to scan on mobile feeds. Good for high-engagement platforms (Instagram, TikTok captions).');
+  else if (score.score >= 60) reasons.push('Plain-language register. Good default for LinkedIn and most B2B social.');
+  else if (score.score >= 40) reasons.push('Reads as professional/technical. Acceptable for niche B2B audiences but loses casual readers.');
+  else reasons.push('Reads as academic or jargon-heavy. Most social audiences will bounce. Consider rewriting.');
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+      <p className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-brand-cyan" />
+        Why this score?
+      </p>
+      <p className="text-[11px] text-zinc-500">
+        Flesch Reading Ease: <code className="text-zinc-300">206.835 − 1.015×(words/sentence) − 84.6×(syllables/word)</code>. Higher is easier.
+      </p>
+      <ul className="space-y-1 mt-2">
+        {reasons.map((r, i) => (
+          <li key={i} className="text-[12px] text-zinc-300 flex gap-2">
+            <span className="text-zinc-500">·</span>
+            <span>{r}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function VersionCard({
+  label,
+  score,
+  metric,
+  content,
+  tone,
+  onAccept,
+  busy,
+  acceptLabel,
+  delta,
+}: {
+  label: string;
+  score: ReturnType<typeof fleschReadingEase> | null;
+  metric: Metric;
+  content: string;
+  tone: 'neutral' | 'better' | 'worse';
+  onAccept: () => void;
+  busy: boolean;
+  acceptLabel: string;
+  delta?: number | null;
+}) {
+  const borderColor =
+    tone === 'better'
+      ? 'border-emerald-500/40'
+      : tone === 'worse'
+        ? 'border-amber-500/40'
+        : 'border-white/10';
+  const view = score ? getMetricView(score, metric) : null;
+  return (
+    <div className={cn('rounded-xl border bg-white/5 p-4 space-y-3', borderColor)}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-zinc-200">{label}</p>
+        {view && (
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'text-lg font-semibold tabular-nums',
+                view.tone === 'good'
+                  ? 'text-emerald-400'
+                  : view.tone === 'warn'
+                    ? 'text-amber-400'
+                    : 'text-red-400',
+              )}
+            >
+              {view.primary}
+            </span>
+            <span className="text-[11px] text-zinc-500 capitalize">{view.label}</span>
+            {typeof delta === 'number' && Math.abs(delta) >= 0.5 && (
+              <span
+                className={cn(
+                  'text-[11px] font-medium tabular-nums',
+                  // For Flesch metric: higher delta is better (green). For grade: lower is better — invert.
+                  metric === 'flesch'
+                    ? delta > 0 ? 'text-emerald-400' : 'text-amber-400'
+                    : delta > 0 ? 'text-amber-400' : 'text-emerald-400',
+                )}
+              >
+                {delta > 0 ? '+' : ''}
+                {delta.toFixed(1)}
+                <span className="text-zinc-600 ml-0.5">Flesch</span>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 bg-black/30 rounded p-3 border border-white/5 max-h-72 overflow-y-auto">
+        {content}
+      </pre>
+      <button
+        onClick={onAccept}
+        disabled={busy}
+        className={cn(
+          'w-full flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50',
+          tone === 'better'
+            ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white'
+            : 'border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10',
+        )}
+      >
+        {busy ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+        {acceptLabel}
+      </button>
+    </div>
+  );
+}
+
+// ─── SEO / GEO tab ──────────────────────────────────────────────────────
+
+function SeoGeoTab({ run }: { run: any }) {
+  // Pull from generate stage (canonical source) and draft metadata (where the
+  // pipeline persists `seo_details`, `eeat_signals`, `ai_citation_readiness`).
+  const generate = (run.stages ?? []).find((s: any) => s.stage_name === 'generate');
+  const out = generate?.output_data ?? {};
+  const drafts = (run.drafts ?? []) as any[];
+  const primary = drafts.find((d) => d.selected) ?? drafts[0];
+  const meta = primary?.metadata ?? {};
+
+  const seo = num(out.seo_score) ?? num(meta.seo_score);
+  const geo = num(out.geo_score) ?? num(meta.geo_score);
+  const combined = num(out.combined_score) ?? num(meta.combined_score) ?? num(primary?.seoScore);
+  const seoDetails: Record<string, number> = (meta.seo_details ?? out.seo_details ?? {}) as Record<string, number>;
+  const eeat: string[] = Array.isArray(meta.eeat_signals)
+    ? meta.eeat_signals
+    : Array.isArray(out.eeat_signals)
+      ? out.eeat_signals
+      : [];
+  const aiCitation: string | null = (meta.ai_citation_readiness ?? out.ai_citation_readiness ?? null) as string | null;
+  const draftedContent: string | null = primary?.rawContent ?? null;
+
+  if (!generate && !primary) {
+    return (
+      <p className="text-sm text-zinc-500 py-8 text-center">SEO/GEO stage hasn't run yet</p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Headline scores */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <BigScore label="SEO Score" value={seo} hint="0-100, keyword + discoverability + technical" />
+        <BigScore label="GEO Score" value={geo} hint="0-100, citability + authority + entity clarity" />
+        <BigScore
+          label="Combined"
+          value={combined}
+          hint="50% SEO · 50% GEO"
+          highlight
+        />
+      </div>
+
+      {/* AI citation readiness */}
+      {aiCitation && (
+        <div className="rounded-xl border border-brand-cyan/30 bg-brand-cyan/5 p-4">
+          <p className="text-[10px] uppercase tracking-wider text-brand-cyan font-medium mb-2">
+            AI Citation Readiness
+          </p>
+          <p className="text-sm text-zinc-200">{aiCitation}</p>
+        </div>
+      )}
+
+      {/* Sub-scores */}
+      {Object.keys(seoDetails).length > 0 && (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <h4 className="text-sm font-semibold text-zinc-100 mb-3">Sub-scores</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+            {Object.entries(seoDetails).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between text-xs">
+                <span className="text-zinc-400 capitalize">{k.replace(/_/g, ' ')}</span>
+                <span className="text-zinc-200 tabular-nums font-medium">
+                  {typeof v === 'number' ? `${v}/10` : String(v)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* EEAT signals */}
+      {eeat.length > 0 && (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <h4 className="text-sm font-semibold text-zinc-100 mb-3">E-E-A-T signals surfaced</h4>
+          <ul className="space-y-1.5">
+            {eeat.map((s, i) => (
+              <li key={i} className="text-xs text-zinc-300 flex gap-2">
+                <span className="text-emerald-400">✓</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Original SEO/GEO drafted content (pre-psychology / pre-humanize) */}
+      {draftedContent && (
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <h4 className="text-sm font-semibold text-zinc-100 mb-2">SEO/GEO draft (pre-psychology)</h4>
+          <p className="text-[10px] text-zinc-500 mb-3">
+            What the SEO/GEO stage produced before psychology and humanizer made their passes.
+          </p>
+          <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-black/30 rounded p-3 border border-white/5">
+            {draftedContent}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BigScore({
+  label,
+  value,
+  hint,
+  highlight,
+}: {
+  label: string;
+  value: number | null;
+  hint: string;
+  highlight?: boolean;
+}) {
+  const tone = value == null ? 'muted' : value >= 75 ? 'good' : value >= 50 ? 'warn' : 'bad';
+  const color = {
+    good: 'text-emerald-400',
+    warn: 'text-amber-400',
+    bad: 'text-red-400',
+    muted: 'text-zinc-500',
+  }[tone];
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-4',
+        highlight
+          ? 'border-brand-purple/40 bg-gradient-to-br from-brand-purple/10 to-brand-pink/10'
+          : 'border-white/10 bg-white/5',
+      )}
+    >
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+        {label}
+      </p>
+      <p className={cn('mt-2 text-3xl font-semibold tabular-nums', color)}>
+        {value == null ? '—' : Math.round(value)}
+      </p>
+      <p className="mt-1 text-[10px] text-zinc-500">{hint}</p>
+    </div>
+  );
+}
+
+function num(v: unknown): number | null {
+  if (typeof v === 'number') return v;
+  if (v && typeof v === 'object' && 'after' in (v as any) && typeof (v as any).after === 'number') {
+    return (v as any).after;
+  }
+  return null;
+}
+
+// ─── Analysis block (SEO / Compliance / Readability) ────────────────────
+
+function AnalysisBlock({ run }: { run: any }) {
+  // Pull the strongest content available — same precedence the rest of the
+  // page uses. SEO & compliance come straight from the pipeline; readability
+  // is computed client-side via Flesch reading ease (no extra LLM call).
+  const drafts = (run.drafts ?? []) as any[];
+  const primary = drafts.find((d) => d.selected) ?? drafts[0];
+  const content: string =
+    primary?.finalContent || primary?.content || run.humanized || '';
+
+  // SEO score precedence:
+  //   1. draft.seoScore (column — set by pipeline since 2026-04-27)
+  //   2. draft.metadata.combined_score (for older runs where seo_score is null
+  //      but combined_score made it into the metadata blob)
+  //   3. generate stage output_data.combined_score (last-resort fallback)
+  const generateStage = (run.stages ?? []).find((s: any) => s.stage_name === 'generate');
+  const seoScore: number | null =
+    typeof primary?.seoScore === 'number'
+      ? primary.seoScore
+      : typeof primary?.metadata?.combined_score === 'number'
+        ? primary.metadata.combined_score
+        : typeof generateStage?.output_data?.combined_score === 'number'
+          ? generateStage.output_data.combined_score
+          : null;
+
+  const compliance = run.compliance ?? run.complianceCheck ?? null;
+  const readability = content ? fleschReadingEase(content) : null;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+      <h3 className="text-sm font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-brand-cyan" />
+        Analysis
+      </h3>
+      <div className="space-y-3">
+        <ScoreRow
+          icon={<TrendingUp className="h-4 w-4" />}
+          label="SEO Score"
+          value={seoScore != null ? `${Math.round(seoScore)}/100` : 'Pending'}
+          tone={seoScore == null ? 'muted' : seoScore >= 75 ? 'good' : seoScore >= 50 ? 'warn' : 'bad'}
+          bar={seoScore != null ? Math.min(100, Math.max(0, seoScore)) : null}
+        />
+        <ScoreRow
+          icon={<ShieldCheck className="h-4 w-4" />}
+          label="Compliance"
+          value={
+            compliance == null
+              ? 'Pending'
+              : compliance.passed
+                ? 'Passed'
+                : `${compliance.issues?.length ?? 0} issue(s)`
+          }
+          tone={compliance == null ? 'muted' : compliance.passed ? 'good' : 'bad'}
+        />
+        <ScoreRow
+          icon={<BookOpen className="h-4 w-4" />}
+          label="Readability"
+          value={
+            readability == null
+              ? 'Pending'
+              : `${Math.round(readability.score)} · ${readability.grade}`
+          }
+          tone={
+            readability == null
+              ? 'muted'
+              : readability.score >= 60
+                ? 'good'
+                : readability.score >= 40
+                  ? 'warn'
+                  : 'bad'
+          }
+          bar={readability ? Math.min(100, Math.max(0, readability.score)) : null}
+          hint={
+            readability
+              ? `${readability.words} words, ~${readability.sentences} sentences`
+              : undefined
+          }
+        />
+      </div>
+      {compliance && !compliance.passed && Array.isArray(compliance.issues) && compliance.issues.length > 0 && (
+        <ul className="mt-4 space-y-1.5 border-t border-white/10 pt-3">
+          {compliance.issues.slice(0, 5).map((issue: string, i: number) => (
+            <li key={i} className="text-[11px] text-amber-300/90 flex items-start gap-1.5">
+              <XCircle className="h-3 w-3 shrink-0 mt-0.5" />
+              <span>{issue}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ScoreRow({
+  icon,
+  label,
+  value,
+  tone,
+  bar,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: 'good' | 'warn' | 'bad' | 'muted';
+  bar?: number | null;
+  hint?: string;
+}) {
+  const toneColor = {
+    good: 'text-emerald-400',
+    warn: 'text-amber-400',
+    bad: 'text-red-400',
+    muted: 'text-zinc-500',
+  }[tone];
+  const barColor = {
+    good: 'bg-emerald-500/60',
+    warn: 'bg-amber-500/60',
+    bad: 'bg-red-500/60',
+    muted: 'bg-zinc-700',
+  }[tone];
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-2 text-zinc-300">
+          <span className={toneColor}>{icon}</span>
+          {label}
+        </span>
+        <span className={cn('font-medium tabular-nums', toneColor)}>{value}</span>
+      </div>
+      {bar != null && (
+        <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+          <div className={cn('h-full transition-all', barColor)} style={{ width: `${bar}%` }} />
+        </div>
+      )}
+      {hint && <p className="text-[11px] text-zinc-500 leading-tight">{hint}</p>}
+    </div>
+  );
+}
+
+// Flesch reading ease — 90+ very easy, 60-70 plain, 30-50 difficult, <30 very hard.
+// Approximate syllable count via vowel-group heuristic; good enough for a UI hint
+// without a syllable-dictionary dep.
+function fleschReadingEase(text: string): {
+  score: number;
+  grade: string;
+  words: number;
+  sentences: number;
+} {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const sentences = Math.max(1, (cleaned.match(/[.!?]+(?=\s|$)/g) ?? []).length);
+  const syllables = words.reduce((sum, w) => sum + countSyllables(w), 0);
+  if (words.length === 0) return { score: 0, grade: '—', words: 0, sentences: 0 };
+  const score =
+    206.835 -
+    1.015 * (words.length / sentences) -
+    84.6 * (syllables / words.length);
+  let grade = 'difficult';
+  if (score >= 80) grade = 'very easy';
+  else if (score >= 70) grade = 'easy';
+  else if (score >= 60) grade = 'plain';
+  else if (score >= 50) grade = 'fairly difficult';
+  else if (score >= 30) grade = 'difficult';
+  else grade = 'very hard';
+  return { score, grade, words: words.length, sentences };
+}
+
+function countSyllables(word: string): number {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (w.length === 0) return 0;
+  if (w.length <= 3) return 1;
+  const trimmed = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '');
+  const groups = trimmed.match(/[aeiouy]{1,2}/g);
+  return Math.max(1, groups?.length ?? 1);
+}
+
+// ─── Activity block (run timeline) ──────────────────────────────────────
+
+function ActivityBlock({ stages }: { stages: any[] }) {
+  // Sort chronologically: started_at if set, otherwise order_index.
+  const events = (stages ?? [])
+    .map((s) => ({
+      name: s.stage_name ?? s.stageName ?? 'unknown',
+      status: s.status ?? 'pending',
+      startedAt: s.started_at ?? s.startedAt ?? null,
+      completedAt: s.completed_at ?? s.completedAt ?? null,
+      orderIndex: s.order_index ?? s.orderIndex ?? 0,
+      error: s.error_message ?? s.errorMessage ?? null,
+    }))
+    .sort((a, b) => {
+      if (a.startedAt && b.startedAt) return a.startedAt.localeCompare(b.startedAt);
+      if (a.startedAt) return -1;
+      if (b.startedAt) return 1;
+      return a.orderIndex - b.orderIndex;
+    });
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+      <h3 className="text-sm font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+        <Activity className="h-4 w-4 text-brand-cyan" />
+        Activity
+      </h3>
+      {events.length === 0 ? (
+        <p className="text-xs text-zinc-500">No activity yet.</p>
+      ) : (
+        <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-white/10">
+          {events.map((e, i) => (
+            <li key={i} className="relative pl-6">
+              <span
+                className={cn(
+                  'absolute left-0 top-1 h-3.5 w-3.5 rounded-full border-2 border-zinc-950',
+                  e.status === 'completed' && 'bg-emerald-500',
+                  e.status === 'running' && 'bg-blue-500 animate-pulse',
+                  e.status === 'failed' && 'bg-red-500',
+                  e.status === 'pending' && 'bg-zinc-600',
+                  e.status === 'skipped' && 'bg-zinc-700',
+                )}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-zinc-200 capitalize leading-tight">{e.name}</span>
+                <span className="text-[11px] text-zinc-500 tabular-nums leading-tight">
+                  {e.startedAt && e.completedAt
+                    ? formatDuration(e.startedAt, e.completedAt)
+                    : e.status}
+                </span>
+              </div>
+              {e.error && (
+                <p className="mt-0.5 text-[11px] text-red-300/80 line-clamp-2 leading-tight">{e.error}</p>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function formatActivityTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDuration(startIso: string, endIso: string): string {
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.round(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
 }

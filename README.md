@@ -1,198 +1,116 @@
-# OpenClaw Social Pipeline
+# Social Pipeline
 
-A native OpenClaw plugin for end-to-end social media content creation and publishing, plus a standalone operator dashboard.
+A Telegram-bot-driven social media content engine with a React dashboard for desktop review. SEO + GEO optimized — every post is built to be both *findable on platform search* and *citable by AI search* (ChatGPT, Perplexity, Google AI Overviews).
 
 ## What It Does
 
-- **Content generation** — research, draft variants, scoring, selection
-- **Marketing Psychology** — applies 30+ behavioral psychology principles to content
-- **Humanizer** — detects and rewrites 29 AI writing patterns for natural tone
-- **Image & video generation** — OpenClaw native media generation with platform-specific aspect ratios
-- **Postiz integration** — media upload, scheduling, publishing, and analytics via API or CLI
-- **Approval workflow** — human review gate before any publishing
-- **Dashboard** — standalone React app for operators to manage the full pipeline
+- **Telegram bot** — message a topic; bot researches, drafts, optimizes, generates media, and asks you to approve before anything publishes
+- **SEO + GEO optimization** — every draft is scored and enhanced for keyword discoverability *and* AI citation readiness (E-E-A-T signals, citable facts, entity clarity)
+- **Research** — Claude's native `web_search` for fresh, sourced content
+- **Marketing Psychology** — applies 30+ behavioral principles to drafts
+- **Humanizer** — detects and rewrites AI writing patterns
+- **Image & video generation** — fal.ai with platform-specific aspect ratios
+- **Postiz publishing** — media upload, scheduling, publishing, and analytics via Postiz API or CLI
+- **Approval gate** — Telegram inline buttons (Approve / Revise / Reject), or do it from the dashboard
+- **Dashboard** — React app for desktop operators to review, edit, and audit runs
 
 ## Architecture
 
 ```
-openclaw-social-pipeline/
-  plugins/openclaw-social-pipeline/     # OpenClaw plugin (installable)
-    openclaw.plugin.json                # Plugin manifest
+social-pipeline/
+  engine/                              # Headless content engine
     src/
-      tools/          # 35+ agent-facing tools
-      services/       # Postiz adapter, pipeline, approvals, analytics
-      taskflow/       # Durable run state controller
-      schemas/        # Zod schemas + Drizzle DB schema
-      db/             # SQLite database init
-    lobster/          # Deterministic workflow definitions
-    skills/           # Vendored Humanizer + Marketing Psychology
-    dashboard-api/    # Fastify REST API for the dashboard
-  dashboard/social-pipeline-dashboard/  # Standalone React dashboard
+      bot/             # Telegram bot (Telegraf) — primary operator surface
+      services/        # pipeline, postiz, seo-geo, media, learning, analytics
+      schemas/         # Zod schemas + Drizzle DB schema
+      db/              # SQLite database init
+      taskflow/        # Durable run state controller
+    skills/            # Humanizer, Marketing Psychology, Social SEO+GEO
+    dashboard-api/     # Fastify REST API for the dashboard
+  dashboard/social-pipeline-dashboard/ # Standalone React dashboard
+  docs/systemd/        # systemd user units for api / dashboard / bot
 ```
 
-## Install as OpenClaw Plugin
+## Operator Surfaces
+
+| | Bot (Telegram) | Dashboard (web) |
+|---|---|---|
+| Kick off a run | ✅ — message a topic | ✅ |
+| Approve / Reject / Revise | ✅ — inline buttons | ✅ |
+| Edit a draft mid-flight | — | ✅ |
+| Browse history, analytics | — | ✅ |
+| Reschedule, retry stages | — | ✅ |
+
+Both write to the same SQLite DB. Dashboard polls every 30 s, so bot-driven changes show up automatically.
+
+## Install
 
 ```bash
-# Clone into OpenClaw's plugin directory
-git clone https://github.com/seantunley/openclaw-social-pipeline ~/.openclaw/plugins/openclaw-social-pipeline
+git clone https://github.com/seantunley/openclaw-social-pipeline social-pipeline
+cd social-pipeline
+npm run install:all      # installs root + engine + dashboard
 
-# Install root workspace deps
-cd ~/.openclaw/plugins/openclaw-social-pipeline
-npm install
+cp engine/.env.example engine/.env
+# Fill in: ANTHROPIC_API_KEY, FAL_API_KEY, POSTIZ_API_KEY, POSTIZ_API_URL,
+#          TELEGRAM_BOT_TOKEN, TELEGRAM_AUTHORIZED_USER_ID
 
-# Build the plugin
-cd plugins/openclaw-social-pipeline
-mkdir -p dist/data                 # SQLite database lands here
-cp .env.example .env               # Fill in POSTIZ_API_KEY, ANTHROPIC_API_KEY, FAL_API_KEY
-npm install
-npm run build
-
-# Register with OpenClaw
-openclaw plugins install --dangerously-force-unsafe-install ~/.openclaw/plugins/openclaw-social-pipeline/plugins/openclaw-social-pipeline
+npm run build            # compiles engine + dashboard
 ```
 
-> **Note:** The `--dangerously-force-unsafe-install` flag is required because the plugin includes `child_process` calls (Postiz CLI) and network requests (Postiz API, fal.ai). This is expected behavior for a publishing pipeline.
+### Telegram bot setup
 
-### Rebuild Native Bindings
+1. Talk to [@BotFather](https://t.me/BotFather), `/newbot`, copy the token.
+2. Talk to [@userinfobot](https://t.me/userinfobot) to get your numeric Telegram user ID.
+3. Put both in `engine/.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=123456:ABC...
+   TELEGRAM_AUTHORIZED_USER_ID=987654321
+   ```
+The bot will refuse messages from anyone other than the authorized ID.
 
-After `openclaw plugins install`, the `better-sqlite3` native binding may not survive the copy. Rebuild it:
+## Run
+
+### Local development
 
 ```bash
-cd ~/.openclaw/extensions/openclaw-social-pipeline
-npm rebuild better-sqlite3
+npm run dev                # starts dashboard-api (3000) + dashboard (3001)
+cd engine && npm run dev   # tsc --watch for live typescript compile
+
+# In a separate terminal:
+cd engine && npm run start:bot
 ```
 
-### Expose Tools to Agents
-
-Tools are only available to agents that explicitly allow the plugin. Add the plugin id to each agent's `tools.alsoAllow` list:
-
-```json
-{
-  "tools": {
-    "alsoAllow": [
-      "openclaw-social-pipeline"
-    ]
-  }
-}
-```
-
-Without this, the agent cannot see or call any of the plugin's 55 tools.
-
-### Persistent Services (Linux/macOS)
-
-Copy the systemd user units from `docs/systemd/` to run the API and dashboard as background services:
+### Persistent services (Linux / macOS)
 
 ```bash
 cp docs/systemd/*.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now social-pipeline-api social-pipeline-dashboard
+systemctl --user enable --now social-pipeline-api social-pipeline-dashboard social-pipeline-bot
 ```
 
-The API runs on port 3000, the dashboard on port 3001.
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and fill in:
-
-```bash
-cp .env.example .env
-```
-
-Required secrets:
-- `ANTHROPIC_API_KEY` — for LLM content generation
-- `POSTIZ_API_KEY` — for publishing (if using API mode)
-- `POSTIZ_API_BASE_URL` — Postiz API endpoint
-
-Optional:
-- `FAL_API_KEY` — for image/video generation via fal.ai
-- `IMGBB_API_KEY` — for permanent image hosting
-
-### Run the Dashboard
-
-```bash
-# Install dependencies
-cd dashboard/social-pipeline-dashboard
-npm install
-
-# Start the dashboard (port 3001)
-npm run dev
-```
-
-### Run the API Server
-
-```bash
-cd plugins/openclaw-social-pipeline
-npm install
-npm run start:api    # Starts Fastify on port 3000
-```
-
-### Run Both Together
-
-From the workspace root:
-
-```bash
-npm install
-npm run dev          # Starts API (3000) + Dashboard (3001) concurrently
-```
+Adjust `WorkingDirectory` in the unit files to match where you cloned the repo (default expects `~/social-pipeline`). The dashboard-api runs on port 3000, the dashboard on port 3001, the bot is long-poll (no port).
 
 ## Pipeline Stages
 
-1. **Collect** — gather content brief
-2. **Research** — topic and audience research
-3. **Marketing Psychology** — apply persuasion principles
-4. **Draft Variants** — generate multiple content versions
-5. **Score & Select** — rank and choose best draft
-6. **Humanize** — remove AI writing patterns
-7. **Compliance Check** — brand and tone validation
-8. **Media Generation** — create images or video
-9. **Approval** — human review gate
-10. **Upload to Postiz** — push media assets
-11. **Create Post** — create the post in Postiz
-12. **Schedule/Publish** — schedule or immediately publish
-13. **Analytics Sync** — pull performance data back
-14. **Feedback Writeback** — feed insights into future runs
+A bot run executes:
 
-## Agent Tools
-
-The plugin exposes 35+ tools to the OpenClaw agent:
-
-| Category | Tools |
-|----------|-------|
-| Campaigns | `social_campaign_create`, `social_campaign_update`, `social_brief_create`, `social_brief_list` |
-| Runs | `social_run_create`, `social_run_list`, `social_run_get`, `social_run_retry_stage`, `social_run_cancel` |
-| Drafting | `social_research_generate`, `social_draft_generate`, `social_draft_score`, `social_draft_select` |
-| Skills | `social_apply_marketing_psychology`, `social_apply_humanizer` |
-| Media | `social_image_generate`, `social_video_generate`, `social_media_regenerate`, `social_media_select` |
-| Approval | `social_submit_for_approval`, `social_approve`, `social_reject`, `social_request_revision` |
-| Postiz | `social_postiz_auth_status`, `social_postiz_integrations_list`, `social_postiz_upload_media`, `social_postiz_create_post`, `social_postiz_schedule_post`, `social_postiz_set_post_status`, `social_postiz_list_posts`, `social_postiz_post_analytics`, `social_postiz_platform_analytics` |
-| Config | `social_config_get`, `social_config_set`, `social_dashboard_summary`, `social_dashboard_pipeline_state` |
-
-## Dashboard Pages
-
-- **Overview** — pipeline health, status counts, pending approvals
-- **Runs** — searchable/filterable run list
-- **Run Detail** — full pipeline timeline with stage outputs
-- **Approvals** — pending approval queue with quick actions
-- **Campaigns** — campaign management
-- **Media Studio** — image/video gallery with regeneration
-- **Schedule** — Postiz schedule view
-- **Analytics** — performance charts and top performers
-- **Settings** — full pipeline configuration
+1. **Research** — Claude `web_search` over the topic, capture sources
+2. **SEO + GEO generation** — produce a draft already optimized for citability and platform search (E-E-A-T signals, primary keyword, entity clarity)
+3. **Marketing Psychology** — layer behavioral principles
+4. **Humanizer** — strip AI writing tells
+5. **Compliance check** — brand and tone validation
+6. **Media generation** — image (fal.ai nano-banana) or video (kling/wan/sora)
+7. **Approval card in Telegram** — preview + Approve / Revise / Reject buttons
+8. **Postiz publish** (on approve) — upload media, create post, schedule or publish immediately
+9. **Analytics sync** — pull performance back into the DB for the dashboard
 
 ## Tech Stack
 
-- **Plugin**: TypeScript, Drizzle ORM, SQLite, Zod
-- **API**: Fastify, CORS
-- **Dashboard**: React 18, Vite, Tailwind CSS, TanStack Query, Recharts, Lucide Icons
-- **LLM**: Anthropic Claude SDK
-- **Publishing**: Postiz API/CLI
+- **Engine**: TypeScript, Drizzle ORM, SQLite, Zod, Anthropic Claude SDK, fal.ai
+- **Bot**: Telegraf
+- **API**: Fastify
+- **Dashboard**: React 18, Vite, Tailwind CSS, TanStack Query, Recharts, Lucide
+- **Publishing**: Postiz API or CLI
 
 ## License
 

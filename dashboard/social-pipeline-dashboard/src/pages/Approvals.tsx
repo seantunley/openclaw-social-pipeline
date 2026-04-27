@@ -52,7 +52,7 @@ export default function Approvals() {
                 approve.mutate({ id, data: { notes } })
               }
               onReject={(id, reason) =>
-                rejectMut.mutate({ id, data: { reason } })
+                rejectMut.mutate({ id, data: { notes: reason } })
               }
               onRevise={(id, notes) =>
                 reviseMut.mutate({ id, data: { notes } })

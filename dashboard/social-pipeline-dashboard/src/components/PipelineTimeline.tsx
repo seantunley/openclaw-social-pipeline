@@ -1,22 +1,17 @@
 import { CheckCircle2, Circle, Loader2, XCircle, Clock } from 'lucide-react';
-import { cn, formatStatus } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
-const PIPELINE_STAGES = [
-  'brief_generation',
-  'research',
-  'psychology_analysis',
-  'content_strategy',
-  'draft_generation',
-  'draft_selection',
-  'humanizer',
-  'compliance_check',
-  'media_prompt_generation',
-  'media_generation',
-  'media_selection',
-  'final_assembly',
-  'approval',
-  'postiz_upload',
-  'published',
+// Stage names + display order match the engine's `social_run_stage.stage_name`
+// enum exactly. Earlier this list used invented names that the engine never
+// wrote, so every row showed idle.
+const PIPELINE_STAGES: Array<{ key: string; label: string }> = [
+  { key: 'generate', label: 'Research + draft' },
+  { key: 'psychology', label: 'Marketing psychology' },
+  { key: 'humanize', label: 'Humanize + compliance' },
+  { key: 'media', label: 'Image generation' },
+  { key: 'approve', label: 'Awaiting approval' },
+  { key: 'publish', label: 'Publish via Postiz' },
+  { key: 'analytics', label: 'Analytics sync' },
 ];
 
 interface PipelineTimelineProps {
@@ -51,12 +46,12 @@ export default function PipelineTimeline({
   return (
     <div className="space-y-0">
       {PIPELINE_STAGES.map((stage, i) => {
-        const status = stageStatuses[stage] || (currentStage === stage ? 'running' : 'idle');
-        const isCurrent = currentStage === stage;
+        const status = stageStatuses[stage.key] || (currentStage === stage.key ? 'running' : 'idle');
+        const isCurrent = currentStage === stage.key || status === 'running';
         const isFailed = status === 'failed' || status === 'error';
 
         return (
-          <div key={stage} className="flex items-stretch">
+          <div key={stage.key} className="flex items-stretch">
             <div className="flex flex-col items-center mr-4">
               <div className={cn('flex-shrink-0', isCurrent && 'scale-110')}>
                 {stageIcon(status)}
@@ -78,11 +73,11 @@ export default function PipelineTimeline({
                     isCurrent ? 'text-zinc-100' : status === 'completed' ? 'text-zinc-300' : 'text-zinc-500'
                   )}
                 >
-                  {formatStatus(stage)}
+                  {stage.label}
                 </p>
                 {isFailed && onRetry && (
                   <button
-                    onClick={() => onRetry(stage)}
+                    onClick={() => onRetry(stage.key)}
                     className="text-xs text-red-400 hover:text-red-300 underline"
                   >
                     Retry

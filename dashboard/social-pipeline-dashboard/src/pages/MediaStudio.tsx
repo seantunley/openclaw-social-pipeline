@@ -14,7 +14,7 @@ export default function MediaStudio() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['media'],
     queryFn: async () => {
-      const res = await fetch('/api/media');
+      const res = await fetch('/api/social/media-assets');
       if (!res.ok) throw new Error('Failed to fetch media');
       return res.json();
     },

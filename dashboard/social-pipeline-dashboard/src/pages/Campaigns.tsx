@@ -20,7 +20,7 @@ export default function Campaigns() {
   const { data, isLoading } = useQuery({
     queryKey: ['campaigns'],
     queryFn: async () => {
-      const res = await fetch('/api/campaigns');
+      const res = await fetch('/api/social/campaigns');
       if (!res.ok) throw new Error('Failed to fetch campaigns');
       return res.json();
     },
@@ -28,7 +28,7 @@ export default function Campaigns() {
 
   const createCampaign = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/campaigns', {
+      const res = await fetch('/api/social/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

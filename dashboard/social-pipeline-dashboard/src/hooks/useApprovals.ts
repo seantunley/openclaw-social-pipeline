@@ -16,7 +16,7 @@ export function useApproveRun() {
 export function useRejectRun() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { reason: string } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { notes: string; reviewer?: string } }) =>
       rejectRun(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['runs'] });
