@@ -16,6 +16,26 @@ export function useRun(id: string | undefined) {
   });
 }
 
+/**
+ * Variant of useRun that polls while the run is still in-progress.
+ * Stops as soon as the run reaches a terminal state (pending_approval,
+ * approved, completed, failed, cancelled). Used by Composer's live
+ * pipeline panel; superseded by the SSE event stream in Phase D.
+ */
+export function useLiveRun(id: string | undefined) {
+  return useQuery({
+    queryKey: ['run', id],
+    queryFn: () => fetchRun(id!),
+    enabled: !!id,
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.status;
+      const terminal = ['pending_approval', 'approved', 'completed', 'failed', 'cancelled', 'rejected'];
+      if (status && terminal.includes(status)) return false;
+      return 2000;
+    },
+  });
+}
+
 export function useCreateRun() {
   const qc = useQueryClient();
   return useMutation({
