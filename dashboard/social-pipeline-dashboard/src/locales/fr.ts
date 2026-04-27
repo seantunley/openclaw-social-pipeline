@@ -167,6 +167,40 @@ const fr = {
     none: 'Aucun',
   },
 
+  approvals: {
+    title: 'Approbations en attente',
+    subtitle: 'Examinez et approuvez le contenu avant publication',
+    waiting_count: '{count} élément(s) en attente de revue',
+    review_next: 'Examiner le suivant',
+    all_caught_up: 'Tout est à jour',
+    empty: 'Aucun contenu en attente d\'approbation',
+  },
+
+  overview: {
+    title: 'Vue d\'ensemble',
+    subtitle: 'Performance du pipeline en un coup d\'œil',
+    needs_attention: 'Demande votre attention',
+    attention: {
+      pending: '{count} approbation(s) en attente',
+      pending_hint: 'Examiner et planifier',
+      failures: '{count} échec(s) récent(s)',
+      failures_hint: 'Investiguer ou relancer',
+    },
+    stat: {
+      total_runs: 'Total des exécutions',
+      pending_approval: 'En attente d\'approbation',
+      scheduled: 'Planifiées',
+      published: 'Publiées',
+    },
+    status_breakdown: 'Répartition des statuts',
+    recent_failures: 'Échecs récents',
+    upcoming_scheduled: 'Prochaines planifications',
+    no_data: 'Aucune donnée disponible',
+    no_failures: 'Aucun échec récent',
+    no_upcoming: 'Aucune publication à venir',
+    unknown_stage: 'Étape inconnue',
+  },
+
   runs: {
     title: 'Exécutions du pipeline',
     subtitle: 'Consulter et gérer les exécutions du pipeline de contenu',

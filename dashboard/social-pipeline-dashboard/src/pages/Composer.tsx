@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import {
   PLATFORMS_ORDERED,
@@ -283,6 +283,7 @@ export default function Composer() {
           selected={selected}
           bodyFor={bodyFor}
           globalText={globalText}
+          attachments={attachments}
         />
       </div>
 
@@ -920,11 +921,13 @@ function PreviewPanel({
   selected,
   bodyFor,
   globalText,
+  attachments,
 }: {
   active: Tab;
   selected: Set<PlatformId>;
   bodyFor: (id: PlatformId) => string;
   globalText: string;
+  attachments: File[];
 }) {
   const t = useT();
   const target: PlatformId | null =
@@ -933,6 +936,20 @@ function PreviewPanel({
       : (active as PlatformId);
   const spec = target ? getPlatformSpec(target) : null;
   const body = active === 'global' ? globalText : bodyFor(active);
+
+  // First image attachment becomes the preview hero. Object URLs are
+  // revoked on cleanup so we don't leak blobs across re-renders.
+  const firstImage = attachments.find((f) => f.type.startsWith('image/'));
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!firstImage) {
+      setImageUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(firstImage);
+    setImageUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [firstImage]);
 
   return (
     <div className="rounded-xl border border-white/10 bg-card p-4">
@@ -948,25 +965,40 @@ function PreviewPanel({
         )}
       </div>
 
-      {!body ? (
+      {!body && !imageUrl ? (
         <div className="rounded-lg border border-dashed border-white/10 p-12 text-center text-xs text-zinc-500">
           {t('composer.no_content')}
         </div>
       ) : (
-        <PreviewCard spec={spec!} body={body} />
+        <PreviewCard spec={spec!} body={body} imageUrl={imageUrl} />
       )}
     </div>
   );
 }
 
-function PreviewCard({ spec, body }: { spec: PlatformSpec; body: string }) {
+function PreviewCard({
+  spec,
+  body,
+  imageUrl,
+}: {
+  spec: PlatformSpec;
+  body: string;
+  imageUrl?: string | null;
+}) {
+  // Cap the preview at ~360px wide and the placeholder image at 280px
+  // tall. Without the cap, tall aspect ratios (9:16 stories, 4:5
+  // Instagram) blew the preview pane up to 600+px tall on a wide screen
+  // and dominated the page. The cap preserves the ratio (so the operator
+  // still sees the shape) without making the preview the dominant
+  // element.
   const aspectStyle = useMemo(() => {
     const [w, h] = spec.media.imageAspectRatio.split(':').map(Number);
-    return { paddingBottom: `${(h / w) * 100}%` } as const;
+    const ratioPct = (h / w) * 100;
+    return { paddingBottom: `${ratioPct}%` } as const;
   }, [spec.media.imageAspectRatio]);
 
   return (
-    <div className="rounded-lg border border-white/10 overflow-hidden bg-black/40">
+    <div className="mx-auto w-full max-w-sm rounded-lg border border-white/10 overflow-hidden bg-black/40">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
         <span style={{ color: spec.color }} className="text-base leading-none">
           {spec.icon}
@@ -976,12 +1008,20 @@ function PreviewCard({ spec, body }: { spec: PlatformSpec; body: string }) {
           {body.length} / {spec.content.charLimit}
         </span>
       </div>
-      <div className="relative w-full bg-zinc-900" style={aspectStyle}>
-        <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600">
-          {spec.media.imageDimensions.width}×{spec.media.imageDimensions.height}
-        </div>
+      <div className="relative w-full bg-zinc-900 max-h-72 overflow-hidden" style={aspectStyle}>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600">
+            {spec.media.imageDimensions.width}×{spec.media.imageDimensions.height}
+          </div>
+        )}
       </div>
-      <div className="p-3 text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">
+      <div className="p-3 text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {body}
       </div>
     </div>

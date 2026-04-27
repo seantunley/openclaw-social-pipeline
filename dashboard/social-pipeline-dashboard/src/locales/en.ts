@@ -167,6 +167,40 @@ const en = {
     none: 'None',
   },
 
+  approvals: {
+    title: 'Pending Approvals',
+    subtitle: 'Review and approve content before publishing',
+    waiting_count: '{count} item(s) waiting for review',
+    review_next: 'Review next',
+    all_caught_up: 'All caught up',
+    empty: 'No content pending approval',
+  },
+
+  overview: {
+    title: 'Overview',
+    subtitle: 'Pipeline performance at a glance',
+    needs_attention: 'Needs your attention',
+    attention: {
+      pending: '{count} pending approval(s)',
+      pending_hint: 'Review and schedule',
+      failures: '{count} recent failure(s)',
+      failures_hint: 'Investigate or re-trigger',
+    },
+    stat: {
+      total_runs: 'Total Runs',
+      pending_approval: 'Pending Approval',
+      scheduled: 'Scheduled',
+      published: 'Published',
+    },
+    status_breakdown: 'Status Breakdown',
+    recent_failures: 'Recent Failures',
+    upcoming_scheduled: 'Upcoming Scheduled',
+    no_data: 'No data available',
+    no_failures: 'No recent failures',
+    no_upcoming: 'No upcoming posts',
+    unknown_stage: 'Unknown stage',
+  },
+
   runs: {
     title: 'Pipeline Runs',
     subtitle: 'View and manage content pipeline runs',

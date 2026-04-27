@@ -5,6 +5,7 @@ import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
 import { useSummary } from '@/hooks/useSummary';
 import { formatDate, formatRelative } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 const STATUS_COLORS: Record<string, string> = {
   completed: '#10b981',
@@ -16,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function Overview() {
+  const t = useT();
   const { data, isLoading } = useSummary();
 
   const summary = data || {
@@ -37,12 +39,12 @@ export default function Overview() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Overview</h1>
+        <h1 className="text-2xl font-bold text-primaryText">{t('overview.title')}</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-32 rounded-xl bg-white/5 border border-white/10 animate-skeleton-pulse"
+              className="h-32 rounded-xl bg-surface-soft border border-border-strong animate-skeleton-pulse"
             />
           ))}
         </div>
@@ -53,8 +55,8 @@ export default function Overview() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-primaryText">Overview</h1>
-        <p className="mt-1 text-sm text-muted">Pipeline performance at a glance</p>
+        <h1 className="text-2xl font-bold text-primaryText">{t('overview.title')}</h1>
+        <p className="mt-1 text-sm text-muted">{t('overview.subtitle')}</p>
       </div>
 
       {/* Phase E: "What needs your attention" — surfaces actionable
@@ -65,7 +67,7 @@ export default function Overview() {
         <div className="rounded-xl border border-brand-purple/30 bg-brand-purple/5 p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-brand-cyan">
-              Needs your attention
+              {t('overview.needs_attention')}
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -78,10 +80,9 @@ export default function Overview() {
                   <Clock className="h-5 w-5 text-amber-400" />
                   <div>
                     <p className="text-sm font-medium text-primaryText">
-                      {summary.pendingApproval} pending approval
-                      {summary.pendingApproval === 1 ? '' : 's'}
+                      {t('overview.attention.pending', { count: summary.pendingApproval })}
                     </p>
-                    <p className="text-[11px] text-muted">Review and schedule</p>
+                    <p className="text-[11px] text-muted">{t('overview.attention.pending_hint')}</p>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted group-hover:text-secondaryText" />
@@ -96,10 +97,9 @@ export default function Overview() {
                   <AlertTriangle className="h-5 w-5 text-red-400" />
                   <div>
                     <p className="text-sm font-medium text-primaryText">
-                      {(summary.recentFailures || []).length} recent failure
-                      {(summary.recentFailures || []).length === 1 ? '' : 's'}
+                      {t('overview.attention.failures', { count: (summary.recentFailures || []).length })}
                     </p>
-                    <p className="text-[11px] text-muted">Investigate or re-trigger</p>
+                    <p className="text-[11px] text-muted">{t('overview.attention.failures_hint')}</p>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted group-hover:text-secondaryText" />
@@ -111,25 +111,25 @@ export default function Overview() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Runs"
+          label={t('overview.stat.total_runs')}
           value={summary.totalRuns}
           icon={Play}
           gradient="from-blue-500/20 to-cyan-500/20"
         />
         <StatCard
-          label="Pending Approval"
+          label={t('overview.stat.pending_approval')}
           value={summary.pendingApproval}
           icon={Clock}
           gradient="from-amber-500/20 to-orange-500/20"
         />
         <StatCard
-          label="Scheduled"
+          label={t('overview.stat.scheduled')}
           value={summary.scheduled}
           icon={CalendarDays}
           gradient="from-indigo-500/20 to-purple-500/20"
         />
         <StatCard
-          label="Published"
+          label={t('overview.stat.published')}
           value={summary.published}
           icon={CheckCircle2}
           gradient="from-emerald-500/20 to-teal-500/20"
@@ -137,8 +137,8 @@ export default function Overview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4">Status Breakdown</h2>
+        <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-6">
+          <h2 className="text-lg font-semibold text-primaryText mb-4">{t('overview.status_breakdown')}</h2>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -172,16 +172,16 @@ export default function Overview() {
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-[260px] text-zinc-500 text-sm">
-              No data available
+              {t('overview.no_data')}
             </div>
           )}
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+          <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-6">
+            <h2 className="text-lg font-semibold text-primaryText mb-4 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-400" />
-              Recent Failures
+              {t('overview.recent_failures')}
             </h2>
             {(summary.recentFailures || []).length > 0 ? (
               <div className="space-y-3">
@@ -191,11 +191,11 @@ export default function Overview() {
                     className="flex items-center justify-between rounded-lg bg-red-500/5 border border-red-500/10 px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-zinc-200">
+                      <p className="text-sm font-medium text-secondaryText">
                         {run.campaign || run.id}
                       </p>
                       <p className="text-xs text-muted">
-                        {run.failedStage || 'Unknown stage'} &middot;{' '}
+                        {run.failedStage || t('overview.unknown_stage')} &middot;{' '}
                         {formatRelative(run.updatedAt)}
                       </p>
                     </div>
@@ -204,24 +204,24 @@ export default function Overview() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-zinc-500">No recent failures</p>
+              <p className="text-sm text-muted">{t('overview.no_failures')}</p>
             )}
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+          <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-6">
+            <h2 className="text-lg font-semibold text-primaryText mb-4 flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-indigo-400" />
-              Upcoming Scheduled
+              {t('overview.upcoming_scheduled')}
             </h2>
             {(summary.upcomingScheduled || []).length > 0 ? (
               <div className="space-y-3">
                 {summary.upcomingScheduled.map((run: any) => (
                   <div
                     key={run.id}
-                    className="flex items-center justify-between rounded-lg bg-white/5 px-4 py-3"
+                    className="flex items-center justify-between rounded-lg bg-surface-soft px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-zinc-200">
+                      <p className="text-sm font-medium text-secondaryText">
                         {run.campaign || run.id}
                       </p>
                       <p className="text-xs text-muted">
@@ -233,7 +233,7 @@ export default function Overview() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-zinc-500">No upcoming posts</p>
+              <p className="text-sm text-muted">{t('overview.no_upcoming')}</p>
             )}
           </div>
         </div>

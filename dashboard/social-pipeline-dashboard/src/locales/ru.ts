@@ -167,6 +167,40 @@ const ru = {
     none: 'Нет',
   },
 
+  approvals: {
+    title: 'Ожидают утверждения',
+    subtitle: 'Проверяйте и утверждайте контент перед публикацией',
+    waiting_count: '{count} элементов на проверке',
+    review_next: 'Следующий',
+    all_caught_up: 'Всё проверено',
+    empty: 'Нет контента, ожидающего утверждения',
+  },
+
+  overview: {
+    title: 'Обзор',
+    subtitle: 'Состояние пайплайна одним взглядом',
+    needs_attention: 'Требует внимания',
+    attention: {
+      pending: '{count} ожидают утверждения',
+      pending_hint: 'Проверьте и запланируйте',
+      failures: '{count} недавних ошибок',
+      failures_hint: 'Разобрать или перезапустить',
+    },
+    stat: {
+      total_runs: 'Всего запусков',
+      pending_approval: 'Ожидают утверждения',
+      scheduled: 'Запланировано',
+      published: 'Опубликовано',
+    },
+    status_breakdown: 'Распределение по статусам',
+    recent_failures: 'Недавние ошибки',
+    upcoming_scheduled: 'Предстоящие публикации',
+    no_data: 'Нет данных',
+    no_failures: 'Недавних ошибок нет',
+    no_upcoming: 'Нет предстоящих публикаций',
+    unknown_stage: 'Неизвестная стадия',
+  },
+
   runs: {
     title: 'Запуски пайплайна',
     subtitle: 'Просмотр и управление запусками контент-пайплайна',
