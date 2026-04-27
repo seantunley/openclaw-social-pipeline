@@ -1047,6 +1047,105 @@ const runsRoutes: FastifyPluginCallback = (
     }
   });
 
+  // ── GET /api/social/runs/:id/events ────────────────────────────────────────
+  // Phase D: server-sent events stream for a single run. Server-side poll
+  // checks the run row at SSE_POLL_MS and emits a `state` event whenever
+  // the serialized snapshot changes. Clients consume via EventSource — see
+  // useLiveRunStream on the dashboard side. Replaces per-client HTTP
+  // polling so N tabs share one DB read.
+  //
+  // We poll the DB instead of LISTEN/NOTIFY because sqlite has no native
+  // pubsub. Writes happen in the engine process (separate from this API),
+  // so an in-memory event bus can't catch them either. The poll interval
+  // is small (1.5s) and reads are cheap (single row by id).
+  const SSE_POLL_MS = 1500;
+
+  fastify.get("/api/social/runs/:id/events", async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    reply.raw.setHeader("Content-Type", "text/event-stream");
+    reply.raw.setHeader("Cache-Control", "no-cache, no-transform");
+    reply.raw.setHeader("Connection", "keep-alive");
+    reply.raw.setHeader("X-Accel-Buffering", "no");
+    reply.raw.flushHeaders?.();
+
+    let lastSerialized = "";
+    let closed = false;
+
+    const send = (event: string, data: unknown) => {
+      if (closed) return;
+      try {
+        reply.raw.write(`event: ${event}\n`);
+        reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        closed = true;
+      }
+    };
+
+    // Heartbeat every 25s so proxies don't kill the connection.
+    const heartbeat = setInterval(() => {
+      if (closed) return;
+      try {
+        reply.raw.write(`: ping\n\n`);
+      } catch {
+        closed = true;
+      }
+    }, 25_000);
+
+    const tick = async () => {
+      if (closed) return;
+      try {
+        const rows = await fastify.db
+          .select()
+          .from(socialRun)
+          .where(eq(socialRun.id, id))
+          .limit(1);
+        if (rows.length === 0) {
+          send("error", { message: "run not found" });
+          closed = true;
+          return;
+        }
+        const run = rows[0] as Record<string, unknown>;
+        // Watch the fields that actually change over a run's lifecycle.
+        // Including everything would emit on every updated_at tick.
+        const snapshot = JSON.stringify({
+          status: run.status,
+          error: run.error_message,
+          started: run.started_at,
+          completed: run.completed_at,
+          scheduled: run.scheduled_at,
+        });
+        if (snapshot !== lastSerialized) {
+          lastSerialized = snapshot;
+          send("state", { runId: id, snapshot: JSON.parse(snapshot) });
+        }
+        // Stop polling once the run is in a terminal state — the client
+        // will reconnect if needed.
+        const terminal = ["completed", "failed", "cancelled", "rejected"];
+        if (typeof run.status === "string" && terminal.includes(run.status)) {
+          send("done", { runId: id, status: run.status });
+        }
+      } catch (err) {
+        fastify.log.error({ err, runId: id }, "[sse] poll failed");
+      }
+    };
+
+    const interval = setInterval(tick, SSE_POLL_MS);
+    // Emit initial snapshot immediately.
+    void tick();
+
+    request.raw.on("close", () => {
+      closed = true;
+      clearInterval(interval);
+      clearInterval(heartbeat);
+      try {
+        reply.raw.end();
+      } catch {
+        // Already closed — fine.
+      }
+    });
+  });
+
   done();
 };
 
