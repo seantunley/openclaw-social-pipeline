@@ -1,21 +1,38 @@
+import { useNavigate } from 'react-router-dom';
 import ApprovalCard from '@/components/ApprovalCard';
 import { useRuns } from '@/hooks/useRuns';
 import { useApproveRun, useRejectRun, useRequestRevision } from '@/hooks/useApprovals';
 import { CheckSquare } from 'lucide-react';
 
 export default function Approvals() {
+  const navigate = useNavigate();
   const { data, isLoading } = useRuns({ status: 'pending_approval' });
   const approve = useApproveRun();
   const rejectMut = useRejectRun();
   const reviseMut = useRequestRevision();
 
-  const runs = data?.runs || data || [];
+  const runs = (data?.runs || data || []) as any[];
+  const firstId = runs[0]?.id || runs[0]?._id;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Pending Approvals</h1>
-        <p className="mt-1 text-sm text-muted">Review and approve content before publishing</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primaryText">Pending Approvals</h1>
+          <p className="mt-1 text-sm text-muted">
+            {runs.length > 0
+              ? `${runs.length} item${runs.length === 1 ? '' : 's'} waiting for review`
+              : 'Review and approve content before publishing'}
+          </p>
+        </div>
+        {firstId && (
+          <button
+            onClick={() => navigate(`/runs/${firstId}`)}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-pink px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+          >
+            Review next →
+          </button>
+        )}
       </div>
 
       {isLoading ? (

@@ -7,7 +7,7 @@ import {
   type PlatformSpec,
 } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
-import { startRun, fetchRun, scheduleRun } from '@/lib/api';
+import { startRun, scheduleRun } from '@/lib/api';
 import {
   Calendar,
   Send,
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import Toast, { type ToastKind } from '@/components/Toast';
 import ScheduleModal from '@/components/ScheduleModal';
+import LiveRunPanel from '@/components/LiveRunPanel';
 
 /**
  * Post Composer.
@@ -68,6 +69,10 @@ export default function Composer() {
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  // Phase B: live run panel. When AI Generate fires, we keep the runId
+  // here and render <LiveRunPanel> inline so the operator watches the
+  // pipeline advance in place — no fire-and-forget toast handoff.
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   // Format override per platform — keyed by platform id so picking
   // "carousel" on Instagram doesn't bleed into the LinkedIn tab. Empty
   // string (or absent) = use the platform default.
@@ -212,18 +217,20 @@ export default function Composer() {
       {aiOpen && (
         <AiGenerateBar
           onClose={() => setAiOpen(false)}
-          onStarted={(msg) => {
+          onRunStarted={(runId) => {
             setAiOpen(false);
-            setToast({ kind: 'success', message: msg });
+            setActiveRunId(runId);
           }}
-          onError={(err) =>
-            setToast({ kind: 'error', message: err })
-          }
+          onError={(err) => setToast({ kind: 'error', message: err })}
           activePlatform={active === 'global' ? 'linkedin' : (active as PlatformId)}
           format={
             active === 'global' ? '' : formatFor(active as PlatformId)
           }
         />
+      )}
+
+      {activeRunId && (
+        <LiveRunPanel runId={activeRunId} onDismiss={() => setActiveRunId(null)} />
       )}
 
       {scheduleOpen && (
@@ -660,13 +667,15 @@ function ToolButton({
 
 function AiGenerateBar({
   onClose,
-  onStarted,
+  onRunStarted,
   onError,
   activePlatform,
   format,
 }: {
   onClose: () => void;
-  onStarted: (msg: string) => void;
+  // Lifts the new runId to Composer so it can render the live pipeline
+  // panel inline instead of bouncing the operator to a toast.
+  onRunStarted: (runId: string) => void;
   onError: (err: string) => void;
   activePlatform: PlatformId;
   format: string;
@@ -680,56 +689,17 @@ function AiGenerateBar({
   const submit = async () => {
     if (!topic.trim() || busy) return;
     setBusy(true);
-    let runId: string | null = null;
     try {
       const res = await startRun({
         topic: topic.trim(),
         platform: activePlatform,
         format: localFormat || null,
       });
-      runId = res.runId;
-      onStarted(t('composer.ai_generate_run_started'));
+      onRunStarted(res.runId);
     } catch (err) {
       onError((err as Error).message);
       setBusy(false);
-      return;
     }
-
-    // Poll the run for up to 3 minutes. The pipeline persists the rich
-    // AllProvidersFailed / AllImageProvidersFailed message on
-    // social_run.error_message — we surface it verbatim so the operator
-    // sees workarounds without leaving the Composer.
-    const POLL_MS = 3000;
-    const MAX_POLLS = 60;
-    let polls = 0;
-    const tick = async () => {
-      if (!runId) return;
-      try {
-        const run = await fetchRun(runId);
-        const status = run.status as string;
-        if (status === 'failed') {
-          onError(run.error_message || 'Run failed (no error message persisted)');
-          setBusy(false);
-          return;
-        }
-        if (status === 'pending_approval' || status === 'completed') {
-          onStarted(`Run ready — open Approvals to review (${runId.slice(0, 8)})`);
-          setBusy(false);
-          return;
-        }
-        polls += 1;
-        if (polls >= MAX_POLLS) {
-          onError(`Run still running after ${(POLL_MS * MAX_POLLS) / 1000}s — check Runs page`);
-          setBusy(false);
-          return;
-        }
-        setTimeout(tick, POLL_MS);
-      } catch (err) {
-        onError(`Lost track of run: ${(err as Error).message}`);
-        setBusy(false);
-      }
-    };
-    setTimeout(tick, POLL_MS);
   };
 
   return (

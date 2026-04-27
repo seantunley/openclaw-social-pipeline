@@ -1,4 +1,7 @@
 const BASE_URL = '/api/social';
+// Re-exported for hooks that build their own URLs (e.g. EventSource for
+// the SSE run-events stream — react-query can't drive EventSource for us).
+export const API_BASE = BASE_URL;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   // Only set Content-Type: application/json when there's actually a body.

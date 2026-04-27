@@ -23,8 +23,10 @@ import PostPreview from '@/components/PostPreview';
 import BeforeAfter from '@/components/BeforeAfter';
 import ScheduleModal from '@/components/ScheduleModal';
 import type { PlatformId } from '@/lib/platforms';
-import { useRun, useRetryStage } from '@/hooks/useRuns';
+import { useRun, useRetryStage, useRuns } from '@/hooks/useRuns';
 import { useApproveRun, useRejectRun } from '@/hooks/useApprovals';
+import { useQuery } from '@tanstack/react-query';
+import { fetchEnvStatus } from '@/lib/api';
 import {
   regenerateDraft,
   regenerateMedia,
@@ -59,7 +61,27 @@ export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: run, isLoading, refetch } = useRun(id);
+  // Pull the pending-approval queue so we can offer a "Next pending" jump
+  // from the Approval tab — Phase A audit win.
+  const { data: pendingData } = useRuns({ status: 'pending_approval' });
+  const pendingRuns = ((pendingData as any)?.runs || pendingData || []) as Array<{ id?: string; _id?: string }>;
+  const nextPendingId = pendingRuns
+    .map((r) => r.id || r._id)
+    .find((rid) => rid && rid !== id) as string | undefined;
   const retryStage = useRetryStage();
+  // Hide the Postiz State tab when Postiz isn't connected — it's a raw
+  // JSON debug surface that's empty until POSTIZ_API_KEY is set, and an
+  // empty debug tab reads as broken to non-developer operators.
+  const { data: envStatus } = useQuery({
+    queryKey: ['env-status'],
+    queryFn: fetchEnvStatus,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const postizConnected = (envStatus?.postiz ?? []).some(
+    (v) => v.name === 'POSTIZ_API_KEY' && v.set,
+  );
+  const visibleTabs = TABS.filter((tab) => tab !== 'Postiz State' || postizConnected);
   const approve = useApproveRun();
   const reject = useRejectRun();
   const [activeTab, setActiveTab] = useState<Tab>('Preview');
@@ -70,6 +92,29 @@ export default function RunDetail() {
   // Run status stays 'approved' through the modal; scheduled_at column
   // captures the publish time.
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  // Tracks whether the operator has manually clicked a tab. We auto-pick a
+  // sensible default tab based on run status the first time the run loads,
+  // but never overwrite an explicit selection.
+  const [tabPinned, setTabPinned] = useState(false);
+
+  // Default-tab logic: land on the tab that matches the operator's most
+  // likely intent for the current run state. This is one of the audit's
+  // Phase-A wins — Approval used to be the 11th of 13 tabs, two clicks
+  // from the post-load Preview default.
+  useEffect(() => {
+    if (tabPinned || !run) return;
+    const status = run.status as string | undefined;
+    const approvalStatus = run.approvalStatus as string | undefined;
+    const needsApproval = status === 'pending_approval';
+    const approvedNeedsSchedule =
+      (status === 'approved' || approvalStatus === 'approved') && !run.scheduledAt;
+    if (needsApproval || approvedNeedsSchedule) {
+      setActiveTab('Approval');
+    } else if (status === 'completed') {
+      setActiveTab('Analytics');
+    }
+    // else: leave on 'Preview' (the initial state).
+  }, [run, tabPinned]);
 
   if (isLoading) {
     return (
@@ -383,6 +428,24 @@ export default function RunDetail() {
                 </button>
               </div>
             )}
+            {/* Phase-A win: after this run is past the approval gate, offer
+                a one-click jump to the next pending item so the operator
+                can flow through the queue without bouncing back to /runs. */}
+            {nextPendingId &&
+              (run.status === 'approved' ||
+                run.approvalStatus === 'approved' ||
+                run.status === 'rejected') && (
+                <button
+                  onClick={() => {
+                    setTabPinned(false);
+                    navigate(`/runs/${nextPendingId}`);
+                  }}
+                  className="flex items-center gap-2 rounded-lg border border-brand-purple/40 bg-brand-purple/10 px-4 py-2.5 text-sm font-medium text-brand-cyan hover:bg-brand-purple/20"
+                >
+                  Next pending →
+                </button>
+              )}
+
             {actionError && (
               <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300 whitespace-pre-wrap">
                 {actionError}
@@ -464,6 +527,32 @@ export default function RunDetail() {
               Run {(id || '').slice(0, 8)}
             </h1>
             <StatusBadge status={run.status} />
+            {/* Persistent stage badge while the pipeline is in flight.
+                Drops out the moment the run reaches a terminal state so
+                we don't claim "running stage X" forever. */}
+            {(run.status === 'running' || run.status === 'pending') && (() => {
+              const stages = ['generate', 'psychology', 'humanize', 'media', 'approve', 'publish', 'analytics'];
+              const labels: Record<string, string> = {
+                generate: 'Researching',
+                psychology: 'Marketing psychology',
+                humanize: 'Humanizing',
+                media: 'Generating media',
+                approve: 'Awaiting approval',
+                publish: 'Publishing',
+                analytics: 'Analytics sync',
+              };
+              const ss = (run.stageStatuses || run.stages || {}) as Record<string, string>;
+              const current =
+                run.currentStage ||
+                stages.find((s) => ss[s] === 'running' || ss[s] === 'in_progress') ||
+                stages.find((s) => !['completed', 'failed', 'skipped'].includes(ss[s]));
+              const idx = current ? stages.indexOf(current) + 1 : null;
+              return current ? (
+                <span className="rounded-full border border-brand-purple/40 bg-brand-purple/10 px-2.5 py-0.5 text-[11px] font-medium text-brand-cyan">
+                  {idx ? `Stage ${idx}/${stages.length} · ` : ''}{labels[current] || current}
+                </span>
+              ) : null;
+            })()}
           </div>
           <div className="mt-1 flex items-center gap-3 text-sm text-muted">
             {run.platform && <span className="capitalize">{run.platform}</span>}
@@ -497,10 +586,13 @@ export default function RunDetail() {
 
         <div className="lg:col-span-3 space-y-4">
           <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setTabPinned(true);
+                }}
                 className={cn(
                   'relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
                   activeTab === tab
@@ -577,7 +669,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
             <button
               onClick={() => onRegenerate(dirty ? prompt.trim() : undefined)}
               disabled={busy}
-              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-pink px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-brand-purple/40 bg-brand-purple/15 px-3 py-1.5 text-xs font-medium text-brand-cyan hover:bg-brand-purple/25 disabled:opacity-50"
             >
               <RefreshCw className={cn('h-3.5 w-3.5', busy && 'animate-spin')} />
               {dirty ? 'Regenerate with edited prompt' : 'Regenerate'}
@@ -986,7 +1078,7 @@ function ReadabilityTab({
           <button
             onClick={() => onImprove('standard')}
             disabled={!!busy}
-            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-brand-purple to-brand-pink px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            className="flex items-center gap-2 rounded-md border border-brand-purple/40 bg-brand-purple/15 px-3 py-1.5 text-xs font-medium text-brand-cyan hover:bg-brand-purple/25 disabled:opacity-50"
           >
             <RefreshCw className={cn('h-3.5 w-3.5', busy === 'improve' && 'animate-spin')} />
             Generate improved version

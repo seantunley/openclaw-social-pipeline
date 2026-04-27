@@ -18,6 +18,8 @@ const ru = {
       create: 'Создать',
       engage: 'Взаимодействие',
       configure: 'Настройки',
+      brand: 'Бренд',
+      tuning: 'Настройка',
     },
     overview: 'Обзор',
     runs: 'Запуски',
