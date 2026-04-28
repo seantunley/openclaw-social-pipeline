@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
+import { useT } from '@/lib/i18n';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -302,6 +303,7 @@ function ListView({ items }: { items: any[] }) {
 
 /* --- Main Calendar Page --- */
 export default function SchedulePage() {
+  const t = useT();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>('month');
@@ -363,11 +365,9 @@ export default function SchedulePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">
-              Publishing Schedule
+              {t('schedule.title')}
             </h1>
-            <p className="text-xs sm:text-sm text-muted mt-1">
-              Drag and drop to reschedule posts
-            </p>
+            <p className="text-xs sm:text-sm text-muted mt-1">{t('schedule.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             {/* View switcher */}

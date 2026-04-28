@@ -44,9 +44,9 @@ export default function TrashPage() {
     try {
       await restoreRun(id);
       invalidateAll();
-      setToast({ kind: 'success', message: `Run ${id.slice(0, 8)} restored.` });
+      setToast({ kind: 'success', message: t('trash.toast.restored', { id: id.slice(0, 8) }) });
     } catch (err) {
-      setToast({ kind: 'error', message: `Restore failed: ${(err as Error).message}` });
+      setToast({ kind: 'error', message: t('trash.toast.restore_failed', { error: (err as Error).message }) });
     } finally {
       setBusy(null);
     }
@@ -57,9 +57,9 @@ export default function TrashPage() {
     try {
       await purgeTrashedRun(id);
       invalidateAll();
-      setToast({ kind: 'success', message: `Run ${id.slice(0, 8)} permanently deleted.` });
+      setToast({ kind: 'success', message: t('trash.toast.purged', { id: id.slice(0, 8) }) });
     } catch (err) {
-      setToast({ kind: 'error', message: `Purge failed: ${(err as Error).message}` });
+      setToast({ kind: 'error', message: t('trash.toast.purge_failed', { error: (err as Error).message }) });
     } finally {
       setBusy(null);
       setConfirmState(null);
@@ -73,10 +73,10 @@ export default function TrashPage() {
       invalidateAll();
       setToast({
         kind: 'success',
-        message: `Permanently deleted ${result.purged} run${result.purged === 1 ? '' : 's'}.`,
+        message: t('trash.toast.emptied', { count: result.purged }),
       });
     } catch (err) {
-      setToast({ kind: 'error', message: `Empty trash failed: ${(err as Error).message}` });
+      setToast({ kind: 'error', message: t('trash.toast.empty_failed', { error: (err as Error).message }) });
     } finally {
       setBusy(null);
       setConfirmState(null);
@@ -88,11 +88,9 @@ export default function TrashPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primaryText flex items-center gap-2">
-            <Trash className="h-6 w-6" /> Trash
+            <Trash className="h-6 w-6" /> {t('trash.title')}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Soft-deleted runs. Restore to bring them back, or empty the trash to free up space.
-          </p>
+          <p className="mt-1 text-sm text-muted">{t('trash.subtitle')}</p>
         </div>
         {total > 0 && (
           <button
@@ -101,23 +99,23 @@ export default function TrashPage() {
             className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            {busy === 'empty' ? 'Emptying…' : `Empty trash (${total})`}
+            {busy === 'empty' ? t('trash.emptying') : t('trash.empty_count', { count: total })}
           </button>
         )}
       </div>
 
       <ConfirmDialog
         open={confirmState?.kind === 'purge-one'}
-        title="Permanently delete this run?"
+        title={t('trash.confirm.purge_title')}
         destructive
         busy={busy?.startsWith('purge:') ?? false}
         message={
           <>
-            <p>This run will be permanently removed along with its drafts, stages, media, and approval records.</p>
-            <p className="mt-2 text-muted">This cannot be undone.</p>
+            <p>{t('trash.confirm.purge_body')}</p>
+            <p className="mt-2 text-muted">{t('trash.confirm.cannot_undo')}</p>
           </>
         }
-        confirmLabel="Permanently delete"
+        confirmLabel={t('trash.confirm.permanent_delete')}
         onConfirm={() => {
           if (confirmState?.kind === 'purge-one') performPurge(confirmState.id);
         }}
@@ -126,18 +124,16 @@ export default function TrashPage() {
 
       <ConfirmDialog
         open={confirmState?.kind === 'empty-trash'}
-        title={`Empty trash (${total} run${total === 1 ? '' : 's'})?`}
+        title={t('trash.confirm.empty_title', { count: total })}
         destructive
         busy={busy === 'empty'}
         message={
           <>
-            <p>
-              Every run currently in the trash will be permanently removed along with its drafts, stages, media, and approval records.
-            </p>
-            <p className="mt-2 text-muted">This cannot be undone.</p>
+            <p>{t('trash.confirm.empty_body')}</p>
+            <p className="mt-2 text-muted">{t('trash.confirm.cannot_undo')}</p>
           </>
         }
-        confirmLabel="Empty trash"
+        confirmLabel={t('trash.confirm.empty_trash')}
         onConfirm={performEmpty}
         onCancel={() => setConfirmState(null)}
       />
@@ -155,22 +151,22 @@ export default function TrashPage() {
           <thead>
             <tr className="border-b border-border-strong bg-surface-faint">
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                Status (when trashed)
+                {t('trash.col.status')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                Platform
+                {t('runs.table.platform')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                Campaign
+                {t('runs.table.campaign')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                Created
+                {t('runs.table.created')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                Trashed
+                {t('trash.col.trashed')}
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">
-                Actions
+                {t('runs.table.actions')}
               </th>
             </tr>
           </thead>
@@ -187,7 +183,7 @@ export default function TrashPage() {
               <tr>
                 <td colSpan={6} className="px-4 py-16 text-center">
                   <Trash className="h-10 w-10 text-faint mx-auto mb-3" />
-                  <p className="text-sm text-muted">Trash is empty.</p>
+                  <p className="text-sm text-muted">{t('trash.empty')}</p>
                 </td>
               </tr>
             ) : (
@@ -214,16 +210,16 @@ export default function TrashPage() {
                         onClick={() => handleRestore(run.id)}
                         disabled={busy === `restore:${run.id}`}
                         className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
-                        title="Restore this run"
+                        title={t('trash.action.restore_title')}
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
-                        {busy === `restore:${run.id}` ? 'Restoring…' : 'Restore'}
+                        {busy === `restore:${run.id}` ? t('trash.action.restoring') : t('trash.action.restore')}
                       </button>
                       <button
                         onClick={() => setConfirmState({ kind: 'purge-one', id: run.id })}
                         disabled={busy === `purge:${run.id}`}
                         className="rounded-md p-1.5 text-muted hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50"
-                        title="Permanently delete"
+                        title={t('trash.action.purge_title')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

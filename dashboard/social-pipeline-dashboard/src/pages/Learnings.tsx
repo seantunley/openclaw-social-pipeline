@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useT } from '@/lib/i18n';
 import {
   Brain,
   Loader2,
@@ -64,6 +65,7 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 export default function LearningsPage() {
+  const t = useT();
   const [filter, setFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRule, setNewRule] = useState({ category: 'tone', content: '', platform: '' });
@@ -100,17 +102,15 @@ export default function LearningsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText flex items-center gap-2">
             <Brain className="w-6 h-6 text-indigo-400" />
-            Content Learnings
+            {t('learnings.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-muted mt-1">
-            Patterns learned from edits, rejections, and analytics — applied to future content
-          </p>
+          <p className="text-xs sm:text-sm text-muted mt-1">{t('learnings.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" /> Add Rule
+          <Plus className="w-3.5 h-3.5" /> {t('learnings.add_rule')}
         </button>
       </div>
 

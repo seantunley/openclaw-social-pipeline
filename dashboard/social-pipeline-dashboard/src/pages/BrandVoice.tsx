@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Save, Sparkles } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 import Toast, { type ToastKind } from '@/components/Toast';
 import { fetchBrandProfile, saveBrandProfile } from '@/lib/api';
 
@@ -65,6 +66,7 @@ const ARCHETYPES = [
 ];
 
 export default function BrandVoice() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['brand-profile'],
@@ -123,12 +125,9 @@ export default function BrandVoice() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primaryText flex items-center gap-2">
-            <Sparkles className="h-6 w-6" /> Brand voice
+            <Sparkles className="h-6 w-6" /> {t('brand.title')}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Loaded into every prompt at run time. Free-text fields are appended verbatim;
-            list fields take comma-separated values.
-          </p>
+          <p className="mt-1 text-sm text-muted">{t('brand.subtitle')}</p>
         </div>
         <button
           onClick={() => save.mutate()}

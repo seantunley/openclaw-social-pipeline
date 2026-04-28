@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import {
   Inbox,
   Loader2,
@@ -49,6 +50,7 @@ function getRelativeTime(iso: string): string {
 }
 
 export default function InboxPage() {
+  const t = useT();
   const [available, setAvailable] = useState<boolean | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,20 +130,15 @@ export default function InboxPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">Inbox</h1>
-          <p className="text-xs sm:text-sm text-muted mt-1">
-            Mentions, comments, and engagement across platforms
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">{t('inbox.title')}</h1>
+          <p className="text-xs sm:text-sm text-muted mt-1">{t('inbox.subtitle')}</p>
         </div>
         <div className="rounded-xl border border-dashed border-yellow-500/30 bg-yellow-500/[0.04] p-10 text-center">
           <AlertCircle className="h-10 w-10 text-yellow-500/30 mx-auto mb-3" />
-          <p className="text-sm text-muted">Postiz is not configured</p>
-          <p className="text-xs text-faint mt-1">
-            Add your Postiz API key in Settings to enable the engagement inbox. The inbox pulls
-            mentions, comments, and DMs from all connected platforms.
-          </p>
+          <p className="text-sm text-muted">{t('inbox.postiz_not_configured')}</p>
+          <p className="text-xs text-faint mt-1">{t('inbox.postiz_hint')}</p>
           <a href="/settings" className="inline-block mt-4 text-xs text-indigo-400 hover:underline">
-            Go to Settings
+            {t('inbox.go_to_settings')}
           </a>
         </div>
       </div>
@@ -153,9 +150,9 @@ export default function InboxPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">Inbox</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">{t('inbox.title')}</h1>
           <p className="text-xs sm:text-sm text-muted mt-1">
-            Mentions, comments, and engagement across platforms &middot; {notifications.length} items
+            {t('inbox.subtitle')} &middot; {t('inbox.item_count', { count: notifications.length })}
           </p>
         </div>
         <button
@@ -163,18 +160,18 @@ export default function InboxPage() {
           disabled={refreshing}
           className="rounded-lg border border-zinc-800 px-3 py-2 text-xs text-muted hover:text-white hover:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> {t('inbox.refresh')}
         </button>
       </div>
 
       {/* Filter bar */}
       <div className="flex gap-1 bg-surface-faint rounded-lg p-0.5 border border-zinc-800 w-fit">
         {[
-          { id: 'all', label: 'All' },
-          { id: 'comment', label: 'Comments' },
-          { id: 'mention', label: 'Mentions' },
-          { id: 'like', label: 'Likes' },
-          { id: 'share', label: 'Shares' },
+          { id: 'all', label: t('inbox.filter.all') },
+          { id: 'comment', label: t('inbox.filter.comments') },
+          { id: 'mention', label: t('inbox.filter.mentions') },
+          { id: 'like', label: t('inbox.filter.likes') },
+          { id: 'share', label: t('inbox.filter.shares') },
         ].map((f) => (
           <button
             key={f.id}
@@ -193,11 +190,9 @@ export default function InboxPage() {
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
           <Inbox className="h-10 w-10 text-faint mx-auto mb-3" />
           <p className="text-sm text-muted">
-            {notifications.length === 0 ? 'No notifications yet' : 'No matching notifications'}
+            {notifications.length === 0 ? t('inbox.empty') : t('inbox.no_matching')}
           </p>
-          <p className="text-xs text-faint mt-1">
-            Engagement from your connected platforms will appear here
-          </p>
+          <p className="text-xs text-faint mt-1">{t('inbox.empty_hint')}</p>
         </div>
       ) : (
         <div className="space-y-2">

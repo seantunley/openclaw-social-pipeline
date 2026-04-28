@@ -201,6 +201,97 @@ const fr = {
     unknown_stage: 'Étape inconnue',
   },
 
+  trash: {
+    title: 'Corbeille',
+    subtitle: 'Exécutions supprimées. Restaurez-les ou videz la corbeille pour libérer de l\'espace.',
+    emptying: 'Vidage…',
+    empty_count: 'Vider la corbeille ({count})',
+    empty: 'La corbeille est vide.',
+    col: { status: 'Statut (au moment du retrait)', trashed: 'Mis à la corbeille' },
+    confirm: {
+      purge_title: 'Supprimer définitivement cette exécution ?',
+      purge_body: 'Cette exécution sera supprimée définitivement avec ses brouillons, étapes, médias et approbations.',
+      cannot_undo: 'Action irréversible.',
+      permanent_delete: 'Supprimer définitivement',
+      empty_title: 'Vider la corbeille ({count} exécution(s)) ?',
+      empty_body: 'Toutes les exécutions actuellement dans la corbeille seront supprimées définitivement avec leurs brouillons, étapes, médias et approbations.',
+      empty_trash: 'Vider la corbeille',
+    },
+    action: {
+      restore: 'Restaurer',
+      restoring: 'Restauration…',
+      restore_title: 'Restaurer cette exécution',
+      purge_title: 'Supprimer définitivement',
+    },
+    toast: {
+      restored: 'Exécution {id} restaurée.',
+      restore_failed: 'Échec de restauration : {error}',
+      purged: 'Exécution {id} supprimée définitivement.',
+      purge_failed: 'Échec de suppression : {error}',
+      emptied: '{count} exécution(s) supprimée(s) définitivement.',
+      empty_failed: 'Échec du vidage : {error}',
+    },
+  },
+
+  inbox: {
+    title: 'Boîte de réception',
+    subtitle: 'Mentions, commentaires et engagement sur les plateformes',
+    item_count: '{count} éléments',
+    refresh: 'Actualiser',
+    empty: 'Aucune notification pour l\'instant',
+    no_matching: 'Aucune notification correspondante',
+    empty_hint: 'L\'engagement de vos plateformes connectées apparaîtra ici',
+    postiz_not_configured: 'Postiz n\'est pas configuré',
+    postiz_hint: 'Ajoutez votre clé API Postiz dans les Paramètres pour activer la boîte de réception. Elle récupère mentions, commentaires et DMs des plateformes connectées.',
+    go_to_settings: 'Aller aux Paramètres',
+    filter: { all: 'Tous', comments: 'Commentaires', mentions: 'Mentions', likes: 'J\'aime', shares: 'Partages' },
+  },
+
+  campaigns: {
+    title: 'Campagnes',
+    subtitle: 'Gérez vos campagnes de contenu',
+    new: 'Nouvelle campagne',
+    empty_title: 'Aucune campagne',
+    empty_body: 'Créez votre première campagne pour commencer',
+  },
+
+  learnings: {
+    title: 'Apprentissages de contenu',
+    subtitle: 'Motifs appris à partir des modifications, rejets et analyses — appliqués au contenu futur',
+    add_rule: 'Ajouter une règle',
+  },
+
+  research: {
+    title: 'Bibliothèque de recherche',
+    subtitle: 'Résultats de recherche des exécutions du pipeline — examiner, approuver et promouvoir au contenu',
+  },
+
+  brand: {
+    title: 'Voix de marque',
+    subtitle: 'Chargée dans chaque prompt à l\'exécution. Les champs libres sont ajoutés tels quels ; les champs liste prennent des valeurs séparées par des virgules.',
+  },
+
+  schedule: {
+    title: 'Calendrier de publication',
+    subtitle: 'Glissez-déposez pour replanifier les publications',
+  },
+
+  media_studio: {
+    title: 'Studio média',
+    subtitle: 'Parcourir et gérer les médias générés',
+    filter: { all: 'Tous', image: 'Image', video: 'Vidéo' },
+    empty_title: 'Aucun média',
+    empty_body: 'Les médias apparaîtront ici une fois générés par le pipeline',
+    detail_title: 'Détail du média',
+    prompt: 'Prompt',
+    aspect_ratio: 'Ratio',
+    type: 'Type',
+    status: 'Statut',
+    selected: 'Sélectionné',
+    not_selected: 'Non sélectionné',
+    regenerate: 'Régénérer',
+  },
+
   runs: {
     title: 'Exécutions du pipeline',
     subtitle: 'Consulter et gérer les exécutions du pipeline de contenu',

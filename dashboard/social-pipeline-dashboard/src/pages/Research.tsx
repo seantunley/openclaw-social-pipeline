@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useT } from '@/lib/i18n';
 import {
   Search,
   Loader2,
@@ -243,6 +244,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
 }
 
 export default function ResearchPage() {
+  const t = useT();
   const [filter, setFilter] = useState('all');
   const queryClient = useQueryClient();
 
@@ -268,11 +270,9 @@ export default function ResearchPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-indigo-400" />
-            Research Library
+            {t('research.title')}
           </h1>
-          <p className="text-xs sm:text-sm text-muted mt-1">
-            Research findings from pipeline runs — review, approve, and promote to content
-          </p>
+          <p className="text-xs sm:text-sm text-muted mt-1">{t('research.subtitle')}</p>
         </div>
       </div>
 

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Megaphone, Play, ChevronRight } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
+import { useT } from '@/lib/i18n';
 import Modal from '@/components/Modal';
 import { cn, formatDate } from '@/lib/utils';
 
 export default function Campaigns() {
+  const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
@@ -59,15 +61,15 @@ export default function Campaigns() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-primaryText">Campaigns</h1>
-          <p className="mt-1 text-sm text-muted">Manage your content campaigns</p>
+          <h1 className="text-2xl font-bold text-primaryText">{t('campaigns.title')}</h1>
+          <p className="mt-1 text-sm text-muted">{t('campaigns.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          New Campaign
+          {t('campaigns.new')}
         </button>
       </div>
 
@@ -127,8 +129,8 @@ export default function Campaigns() {
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-muted">
           <Megaphone className="h-12 w-12 mb-4 text-faint" />
-          <p className="text-lg font-medium text-muted">No campaigns yet</p>
-          <p className="text-sm mt-1">Create your first campaign to get started</p>
+          <p className="text-lg font-medium text-muted">{t('campaigns.empty_title')}</p>
+          <p className="text-sm mt-1">{t('campaigns.empty_body')}</p>
         </div>
       )}
 
