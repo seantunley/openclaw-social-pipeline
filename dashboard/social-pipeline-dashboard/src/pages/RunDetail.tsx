@@ -38,6 +38,7 @@ import {
   improveReadability,
 } from '@/lib/api';
 import { formatDate, cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 const TABS = [
   'Preview',
@@ -57,7 +58,30 @@ const TABS = [
 
 type Tab = (typeof TABS)[number];
 
+// Maps tab name to its translation key. Kept in one place so the tab list
+// and the strip render stay in lockstep — adding a tab means adding a
+// branch here and a key in locales.
+function tabLabel(t: (k: string) => string, tab: Tab): string {
+  const map: Record<Tab, string> = {
+    'Preview': 'rundetail.tab.preview',
+    'Brief': 'rundetail.tab.brief',
+    'Research': 'rundetail.tab.research',
+    'SEO/GEO': 'rundetail.tab.seo_geo',
+    'Psychology': 'rundetail.tab.psychology',
+    'Drafts': 'rundetail.tab.drafts',
+    'Humanized': 'rundetail.tab.humanized',
+    'Compliance': 'rundetail.tab.compliance',
+    'Readability': 'rundetail.tab.readability',
+    'Media': 'rundetail.tab.media',
+    'Approval': 'rundetail.tab.approval',
+    'Postiz State': 'rundetail.tab.postiz',
+    'Analytics': 'rundetail.tab.analytics',
+  };
+  return t(map[tab]);
+}
+
 export default function RunDetail() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: run, isLoading, refetch } = useRun(id);
@@ -128,7 +152,7 @@ export default function RunDetail() {
   if (!run) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted">Run not found</p>
+        <p className="text-muted">{t('rundetail.not_found')}</p>
       </div>
     );
   }
@@ -332,7 +356,7 @@ export default function RunDetail() {
         return (
           <div className="space-y-4">
             <div className="rounded-lg bg-surface-soft border border-border-strong p-4">
-              <p className="text-sm text-muted mb-2">Approval Status</p>
+              <p className="text-sm text-muted mb-2">{t('rundetail.approval_status')}</p>
               <StatusBadge status={run.approvalStatus || run.status} />
               {run.approvalNotes && (
                 <p className="mt-3 text-sm text-secondaryText">{run.approvalNotes}</p>
@@ -371,7 +395,7 @@ export default function RunDetail() {
                   className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Approve & schedule {actionLoading === 'approve' && '…'}
+                  {t('rundetail.approve_schedule')} {actionLoading === 'approve' && '…'}
                 </button>
                 <button
                   onClick={() => {
@@ -390,7 +414,7 @@ export default function RunDetail() {
                   className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   <XCircle className="h-4 w-4" />
-                  Reject {actionLoading === 'reject' && '…'}
+                  {t('rundetail.reject')} {actionLoading === 'reject' && '…'}
                 </button>
               </div>
             )}
@@ -405,7 +429,7 @@ export default function RunDetail() {
                 className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-pink px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                Schedule publish
+                {t('rundetail.schedule_publish')}
               </button>
             )}
             {/* Already scheduled: show the time and let the operator change it. */}
@@ -424,7 +448,7 @@ export default function RunDetail() {
                   onClick={() => setScheduleOpen(true)}
                   className="text-xs text-secondaryText underline hover:text-white"
                 >
-                  Change time
+                  {t('rundetail.change_time')}
                 </button>
               </div>
             )}
@@ -442,7 +466,7 @@ export default function RunDetail() {
                   }}
                   className="flex items-center gap-2 rounded-lg border border-brand-purple/40 bg-brand-purple/10 px-4 py-2.5 text-sm font-medium text-brand-cyan hover:bg-brand-purple/20"
                 >
-                  Next pending →
+                  {t('rundetail.next_pending')} →
                 </button>
               )}
 
@@ -517,7 +541,7 @@ export default function RunDetail() {
         className="flex items-center gap-2 text-sm text-muted hover:text-secondaryText transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Runs
+        {t('rundetail.back_to_runs')}
       </button>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -533,13 +557,13 @@ export default function RunDetail() {
             {(run.status === 'running' || run.status === 'pending') && (() => {
               const stages = ['generate', 'psychology', 'humanize', 'media', 'approve', 'publish', 'analytics'];
               const labels: Record<string, string> = {
-                generate: 'Researching',
-                psychology: 'Marketing psychology',
-                humanize: 'Humanizing',
-                media: 'Generating media',
-                approve: 'Awaiting approval',
-                publish: 'Publishing',
-                analytics: 'Analytics sync',
+                generate: t('rundetail.stage.generate'),
+                psychology: t('rundetail.stage.psychology'),
+                humanize: t('rundetail.stage.humanize'),
+                media: t('rundetail.stage.media'),
+                approve: t('rundetail.stage.approve'),
+                publish: t('rundetail.stage.publish'),
+                analytics: t('rundetail.stage.analytics'),
               };
               const ss = (run.stageStatuses || run.stages || {}) as Record<string, string>;
               const current =
@@ -600,7 +624,7 @@ export default function RunDetail() {
                     : 'text-muted hover:text-secondaryText'
                 )}
               >
-                {tab}
+                {tabLabel(t, tab)}
                 {activeTab === tab && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
                 )}
