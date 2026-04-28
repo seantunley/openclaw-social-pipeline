@@ -3,6 +3,7 @@ import { cn, formatDate } from '@/lib/utils';
 import { CheckCircle2, XCircle, RotateCcw, Image as ImageIcon } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import Modal from './Modal';
+import { useT } from '@/lib/i18n';
 
 interface ApprovalCardProps {
   run: {
@@ -20,6 +21,7 @@ interface ApprovalCardProps {
 }
 
 export default function ApprovalCard({ run, onApprove, onReject, onRevise }: ApprovalCardProps) {
+  const t = useT();
   const [modalType, setModalType] = useState<'reject' | 'revise' | null>(null);
   const [notes, setNotes] = useState('');
 
@@ -63,7 +65,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
               )}
             </div>
             <p className="text-sm text-secondaryText line-clamp-3">
-              {run.content || 'No content preview available'}
+              {run.content || t('approvals.no_preview')}
             </p>
             {run.createdAt && (
               <p className="mt-1 text-xs text-muted">{formatDate(run.createdAt)}</p>
@@ -76,21 +78,21 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
             className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors"
           >
             <CheckCircle2 className="h-4 w-4" />
-            Approve
+            {t('approvals.approve')}
           </button>
           <button
             onClick={() => setModalType('reject')}
             className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors border-l border-border-strong"
           >
             <XCircle className="h-4 w-4" />
-            Reject
+            {t('approvals.reject')}
           </button>
           <button
             onClick={() => setModalType('revise')}
             className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-yellow-400 hover:bg-yellow-500/10 transition-colors border-l border-border-strong"
           >
             <RotateCcw className="h-4 w-4" />
-            Revise
+            {t('approvals.revise')}
           </button>
         </div>
       </div>
@@ -101,7 +103,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
           setModalType(null);
           setNotes('');
         }}
-        title={modalType === 'reject' ? 'Reject Run' : 'Request Revision'}
+        title={modalType === 'reject' ? t('approvals.reject_title') : t('approvals.revise_title')}
       >
         <div className="space-y-4">
           <textarea
@@ -109,8 +111,8 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
             onChange={(e) => setNotes(e.target.value)}
             placeholder={
               modalType === 'reject'
-                ? 'Reason for rejection...'
-                : 'Revision notes...'
+                ? t('approvals.reject_placeholder')
+                : t('approvals.revise_placeholder')
             }
             rows={4}
             className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-3 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
@@ -123,7 +125,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
               }}
               className="rounded-lg px-4 py-2 text-sm text-muted hover:text-secondaryText transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSubmit}
@@ -135,7 +137,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
                   : 'bg-yellow-500 text-black hover:bg-yellow-600'
               )}
             >
-              {modalType === 'reject' ? 'Reject' : 'Request Revision'}
+              {modalType === 'reject' ? t('approvals.reject') : t('approvals.request_revision')}
             </button>
           </div>
         </div>

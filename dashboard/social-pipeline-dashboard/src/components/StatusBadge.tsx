@@ -1,4 +1,5 @@
 import { cn, formatStatus, statusColor } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 interface StatusBadgeProps {
   status: string;
@@ -6,6 +7,10 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, className }: StatusBadgeProps) {
+  const t = useT();
+  const key = `runs.status.${status}`;
+  const translated = t(key);
+  const label = translated === key ? formatStatus(status) : translated;
   return (
     <span
       className={cn(
@@ -14,7 +19,7 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
         className
       )}
     >
-      {formatStatus(status)}
+      {label}
     </span>
   );
 }

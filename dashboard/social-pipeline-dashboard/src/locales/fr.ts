@@ -174,6 +174,15 @@ const fr = {
     review_next: 'Examiner le suivant',
     all_caught_up: 'Tout est à jour',
     empty: 'Aucun contenu en attente d\'approbation',
+    no_preview: 'Aucun aperçu de contenu disponible',
+    approve: 'Approuver',
+    reject: 'Rejeter',
+    revise: 'Réviser',
+    reject_title: 'Rejeter l\'exécution',
+    revise_title: 'Demander une révision',
+    reject_placeholder: 'Raison du rejet…',
+    revise_placeholder: 'Notes de révision…',
+    request_revision: 'Demander une révision',
   },
 
   overview: {
@@ -292,6 +301,15 @@ const fr = {
     what_sources_say: 'Ce que disent les sources',
     suggested_format: 'Format suggéré',
     sources: 'Sources',
+    empty_hint: 'Les résultats de recherche des exécutions du pipeline apparaîtront ici pour examen',
+    filter: { all: 'Tout', pending: 'En attente', approved: 'Approuvé', promoted: 'Promu', rejected: 'Rejeté' },
+    action: {
+      approve: 'Approuver',
+      reject: 'Rejeter',
+      archive: 'Archiver',
+      create_run: 'Créer une exécution',
+      view_run: 'Voir l\'exécution',
+    },
   },
 
   brand: {
@@ -351,6 +369,9 @@ const fr = {
     title: 'Calendrier de publication',
     subtitle: 'Glissez-déposez pour replanifier les publications',
     empty: 'Aucun contenu planifié sur cette période',
+    view: { month: 'Mois', week: 'Semaine', list: 'Liste' },
+    today: 'Aujourd\'hui',
+    weekday: { mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Jeu', fri: 'Ven', sat: 'Sam', sun: 'Dim' },
   },
 
   media_studio: {

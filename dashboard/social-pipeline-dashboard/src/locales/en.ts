@@ -174,6 +174,15 @@ const en = {
     review_next: 'Review next',
     all_caught_up: 'All caught up',
     empty: 'No content pending approval',
+    no_preview: 'No content preview available',
+    approve: 'Approve',
+    reject: 'Reject',
+    revise: 'Revise',
+    reject_title: 'Reject Run',
+    revise_title: 'Request Revision',
+    reject_placeholder: 'Reason for rejection...',
+    revise_placeholder: 'Revision notes...',
+    request_revision: 'Request Revision',
   },
 
   overview: {
@@ -287,11 +296,20 @@ const en = {
     title: 'Research Library',
     subtitle: 'Research findings from pipeline runs — review, approve, and promote to content',
     empty: 'No research findings yet',
+    empty_hint: 'Research outputs from pipeline runs will appear here for review',
     angle: 'Angle',
     why_now: 'Why Now',
     what_sources_say: 'What Sources Say',
     suggested_format: 'Suggested Format',
     sources: 'Sources',
+    filter: { all: 'All', pending: 'Pending', approved: 'Approved', promoted: 'Promoted', rejected: 'Rejected' },
+    action: {
+      approve: 'Approve',
+      reject: 'Reject',
+      archive: 'Archive',
+      create_run: 'Create Content Run',
+      view_run: 'View content run',
+    },
   },
 
   brand: {
@@ -351,7 +369,11 @@ const en = {
     title: 'Publishing Schedule',
     subtitle: 'Drag and drop to reschedule posts',
     empty: 'No scheduled content in this period',
+    view: { month: 'Month', week: 'Week', list: 'List' },
+    today: 'Today',
+    weekday: { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' },
   },
+
 
   media_studio: {
     title: 'Media Studio',

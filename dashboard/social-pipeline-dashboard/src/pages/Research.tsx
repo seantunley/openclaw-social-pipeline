@@ -195,14 +195,14 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
                     disabled={statusMutation.isPending}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 text-xs transition-colors"
                   >
-                    <Check className="w-3 h-3" /> Approve
+                    <Check className="w-3 h-3" /> {t('research.action.approve')}
                   </button>
                   <button
                     onClick={() => statusMutation.mutate('rejected')}
                     disabled={statusMutation.isPending}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-xs transition-colors"
                   >
-                    <X className="w-3 h-3" /> Reject
+                    <X className="w-3 h-3" /> {t('research.action.reject')}
                   </button>
                 </>
               )}
@@ -216,14 +216,14 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
                 ) : (
                   <ArrowRight className="w-3 h-3" />
                 )}
-                Create Content Run
+                {t('research.action.create_run')}
               </button>
               <button
                 onClick={() => statusMutation.mutate('archived')}
                 disabled={statusMutation.isPending}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-muted hover:text-secondaryText text-xs transition-colors"
               >
-                <Archive className="w-3 h-3" /> Archive
+                <Archive className="w-3 h-3" /> {t('research.action.archive')}
               </button>
             </div>
           )}
@@ -234,7 +234,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
                 href={`/runs/${item.promoted_run_id}`}
                 className="flex items-center gap-1.5 text-xs text-indigo-400 hover:underline"
               >
-                <ArrowRight className="w-3 h-3" /> View content run
+                <ArrowRight className="w-3 h-3" /> {t('research.action.view_run')}
               </a>
             </div>
           )}
@@ -280,11 +280,11 @@ export default function ResearchPage() {
       {/* Filter tabs */}
       <div className="flex gap-1 bg-surface-faint rounded-lg p-0.5 border border-zinc-800 w-fit">
         {[
-          { id: 'all', label: 'All' },
-          { id: 'pending', label: 'Pending' },
-          { id: 'approved', label: 'Approved' },
-          { id: 'promoted', label: 'Promoted' },
-          { id: 'rejected', label: 'Rejected' },
+          { id: 'all', label: t('research.filter.all') },
+          { id: 'pending', label: t('research.filter.pending') },
+          { id: 'approved', label: t('research.filter.approved') },
+          { id: 'promoted', label: t('research.filter.promoted') },
+          { id: 'rejected', label: t('research.filter.rejected') },
         ].map((f) => (
           <button
             key={f.id}
@@ -312,9 +312,7 @@ export default function ResearchPage() {
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
           <FlaskConical className="h-10 w-10 text-faint mx-auto mb-3" />
           <p className="text-sm text-muted">{t('research.empty')}</p>
-          <p className="text-xs text-faint mt-1">
-            Research outputs from pipeline runs will appear here for review
-          </p>
+          <p className="text-xs text-faint mt-1">{t('research.empty_hint')}</p>
         </div>
       ) : (
         <div className="space-y-2">

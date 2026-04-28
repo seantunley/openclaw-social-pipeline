@@ -378,11 +378,11 @@ export default function SchedulePage() {
                   key={v}
                   onClick={() => setView(v)}
                   className={cn(
-                    'px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors',
+                    'px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
                     view === v ? 'bg-surface-medium text-white' : 'text-muted hover:text-secondaryText'
                   )}
                 >
-                  {v}
+                  {t(`schedule.view.${v}`)}
                 </button>
               ))}
             </div>
@@ -399,7 +399,7 @@ export default function SchedulePage() {
                 onClick={() => setCurrentDate(dayjs())}
                 className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 text-muted hover:text-white hover:border-zinc-600 transition-colors"
               >
-                Today
+                {t('schedule.today')}
               </button>
               <span className="text-xs sm:text-sm font-semibold min-w-[120px] sm:min-w-[160px] text-center text-secondaryText">
                 {view === 'week'
@@ -427,12 +427,12 @@ export default function SchedulePage() {
               <div className="overflow-x-auto -mx-3 px-3 sm:-mx-0 sm:px-0">
                 <div className="min-w-[500px]">
                   <div className="grid grid-cols-7 gap-1 mb-1">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+                    {(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const).map((d) => (
                       <div
                         key={d}
                         className="p-1.5 sm:p-2 text-center text-[10px] text-muted font-medium uppercase tracking-wider"
                       >
-                        {d}
+                        {t(`schedule.weekday.${d}`)}
                       </div>
                     ))}
                   </div>

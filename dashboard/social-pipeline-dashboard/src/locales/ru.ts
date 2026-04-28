@@ -174,6 +174,15 @@ const ru = {
     review_next: 'Следующий',
     all_caught_up: 'Всё проверено',
     empty: 'Нет контента, ожидающего утверждения',
+    no_preview: 'Превью контента недоступно',
+    approve: 'Одобрить',
+    reject: 'Отклонить',
+    revise: 'Доработать',
+    reject_title: 'Отклонить запуск',
+    revise_title: 'Запросить доработку',
+    reject_placeholder: 'Причина отклонения…',
+    revise_placeholder: 'Заметки по доработке…',
+    request_revision: 'Запросить доработку',
   },
 
   overview: {
@@ -292,6 +301,15 @@ const ru = {
     what_sources_say: 'Что говорят источники',
     suggested_format: 'Рекомендуемый формат',
     sources: 'Источники',
+    empty_hint: 'Здесь будут появляться результаты исследований из запусков пайплайна',
+    filter: { all: 'Все', pending: 'Ожидают', approved: 'Одобрено', promoted: 'Продвинуто', rejected: 'Отклонено' },
+    action: {
+      approve: 'Одобрить',
+      reject: 'Отклонить',
+      archive: 'В архив',
+      create_run: 'Создать запуск контента',
+      view_run: 'Открыть запуск',
+    },
   },
 
   brand: {
@@ -351,6 +369,9 @@ const ru = {
     title: 'Календарь публикаций',
     subtitle: 'Перетащите, чтобы перепланировать',
     empty: 'В этом периоде нет запланированных публикаций',
+    view: { month: 'Месяц', week: 'Неделя', list: 'Список' },
+    today: 'Сегодня',
+    weekday: { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' },
   },
 
   media_studio: {
