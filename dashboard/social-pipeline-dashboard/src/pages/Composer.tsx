@@ -182,16 +182,16 @@ export default function Composer() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-100">
+          <h1 className="text-2xl font-semibold text-primaryText">
             {t('composer.title')}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">{t('composer.subtitle')}</p>
+          <p className="mt-1 text-sm text-muted">{t('composer.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setScheduleOpen(true)}
-            className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-white/5"
+            className="flex items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-xs font-medium text-secondaryText hover:bg-surface-soft"
           >
             <Calendar className="h-3.5 w-3.5" />
             {t('composer.schedule')}
@@ -306,7 +306,7 @@ function PlatformPicker({
   const t = useT();
   return (
     <div>
-      <p className="mb-2 text-xs uppercase tracking-widest text-zinc-500">
+      <p className="mb-2 text-xs uppercase tracking-widest text-muted">
         {t('composer.publish_to')}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -321,7 +321,7 @@ function PlatformPicker({
                 'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
                 on
                   ? 'border-indigo-400/50 bg-indigo-500/10 text-indigo-200'
-                  : 'border-white/10 text-zinc-400 hover:bg-white/5',
+                  : 'border-border-strong text-muted hover:bg-surface-soft',
               )}
             >
               <span style={{ color: on ? p.color : undefined }}>{p.icon}</span>
@@ -403,9 +403,9 @@ function ComposerPanel({
   const over = limit > 0 && charCount > limit;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-card overflow-hidden flex flex-col">
+    <div className="rounded-xl border border-border-strong bg-card overflow-hidden flex flex-col">
       {/* Tabs */}
-      <div className="flex overflow-x-auto border-b border-white/10">
+      <div className="flex overflow-x-auto border-b border-border-strong">
         {tabs.map((id) => {
           const on = id === active;
           const overridden = id !== 'global' && overrides[id]?.override;
@@ -451,12 +451,12 @@ function ComposerPanel({
                   platform: getPlatformSpec(active).label,
                 })
           }
-          className="w-full resize-none rounded-lg bg-black/30 border border-white/10 p-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+          className="w-full resize-none rounded-lg bg-black/30 border border-border-strong p-3 text-sm text-primaryText placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
         />
 
         {/* Thread parts (Twitter only — visual cue that prior parts are queued) */}
         {thread.length > 0 && (
-          <div className="rounded-md border border-white/10 bg-white/[0.02] p-2 text-[11px] text-zinc-500">
+          <div className="rounded-md border border-border-strong bg-surface-faint p-2 text-[11px] text-muted">
             {thread.length} earlier thread part{thread.length === 1 ? '' : 's'} queued
           </div>
         )}
@@ -467,18 +467,18 @@ function ComposerPanel({
             {attachments.map((file, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-zinc-300"
+                className="flex items-center gap-1.5 rounded-md border border-border-strong bg-black/30 px-2 py-1 text-[11px] text-secondaryText"
               >
                 {file.type.startsWith('video/') ? (
-                  <Video className="h-3 w-3 text-zinc-500" />
+                  <Video className="h-3 w-3 text-muted" />
                 ) : (
-                  <ImageIcon className="h-3 w-3 text-zinc-500" />
+                  <ImageIcon className="h-3 w-3 text-muted" />
                 )}
                 <span className="truncate max-w-[12rem]">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => removeAttachment(i)}
-                  className="text-zinc-500 hover:text-rose-400"
+                  className="text-muted hover:text-rose-400"
                   aria-label="Remove"
                 >
                   <X className="h-3 w-3" />
@@ -502,7 +502,7 @@ function ComposerPanel({
             type="button"
             onClick={onAddToThread}
             disabled={!value.trim()}
-            className="flex items-center gap-1.5 rounded-lg border border-dashed border-white/15 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/5 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-white/15 px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-soft disabled:opacity-40 disabled:hover:bg-transparent"
           >
             <Plus className="h-3.5 w-3.5" />
             {t('composer.add_to_thread')}
@@ -519,7 +519,7 @@ function ComposerPanel({
 
         {/* Per-platform footer */}
         {spec && (
-          <div className="space-y-2 pt-1 border-t border-white/5">
+          <div className="space-y-2 pt-1 border-t border-border-strong">
             <FormatPicker
               spec={spec}
               value={formatFor(active as PlatformId)}
@@ -537,7 +537,7 @@ function ComposerPanel({
               <button
                 type="button"
                 onClick={() => resetOverride(active as PlatformId)}
-                className="text-[11px] text-zinc-500 underline-offset-2 hover:underline hover:text-zinc-300"
+                className="text-[11px] text-muted underline-offset-2 hover:underline hover:text-secondaryText"
               >
                 Reset to global
               </button>
@@ -611,7 +611,7 @@ function ComposerToolbar({
         // the textarea instead of spilling into the per-platform footer
         // (which sits below). 6 cols × 4 rows fits the 24-emoji palette
         // tightly without horizontal scroll.
-        <div className="absolute z-30 bottom-full left-0 mb-2 w-[15.5rem] rounded-lg border border-white/10 bg-zinc-950 p-2 shadow-xl">
+        <div className="absolute z-30 bottom-full left-0 mb-2 w-[15.5rem] rounded-lg border border-border-strong bg-zinc-950 p-2 shadow-xl">
           <div className="grid grid-cols-6 gap-1">
             {EMOJI_PALETTE.map((e) => (
               <button
@@ -621,7 +621,7 @@ function ComposerToolbar({
                   onInsertEmoji(e);
                   setEmojiOpen(false);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded text-base leading-none hover:bg-white/10"
+                className="flex h-8 w-8 items-center justify-center rounded text-base leading-none hover:bg-surface-medium"
               >
                 {e}
               </button>
@@ -651,10 +651,10 @@ function ToolButton({
       title={label}
       aria-label={label}
       className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors',
+        'flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors',
         active
           ? 'bg-brand-purple/20 text-brand-cyan'
-          : 'hover:bg-white/5 hover:text-zinc-200',
+          : 'hover:bg-surface-soft hover:text-secondaryText',
       )}
     >
       {children}
@@ -715,10 +715,10 @@ function AiGenerateBar({
           if (e.key === 'Escape') onClose();
         }}
         placeholder={t('composer.ai_generate_placeholder')}
-        className="flex-1 min-w-[12rem] bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+        className="flex-1 min-w-[12rem] bg-transparent text-sm text-primaryText placeholder-zinc-500 focus:outline-none"
         disabled={busy}
       />
-      <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+      <span className="text-[11px] text-muted flex items-center gap-1">
         <span style={{ color: spec.color }}>{spec.icon}</span>
         {spec.label}
       </span>
@@ -727,7 +727,7 @@ function AiGenerateBar({
           value={localFormat}
           onChange={(e) => setLocalFormat(e.target.value)}
           disabled={busy}
-          className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+          className="rounded-md border border-border-strong bg-black/30 px-2 py-1 text-xs text-secondaryText focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
         >
           <option value="">Default ({spec.media.imageAspectRatio})</option>
           {spec.media.altFormats.map((f) => (
@@ -749,7 +749,7 @@ function AiGenerateBar({
       <button
         type="button"
         onClick={onClose}
-        className="rounded p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+        className="rounded p-1.5 text-muted hover:bg-surface-soft hover:text-secondaryText"
         aria-label="Close"
       >
         <X className="h-3.5 w-3.5" />
@@ -781,8 +781,8 @@ function TabButton({
       className={cn(
         'relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors',
         on
-          ? 'text-zinc-100 border-b-2'
-          : 'text-zinc-500 hover:text-zinc-300 border-b-2 border-transparent',
+          ? 'text-primaryText border-b-2'
+          : 'text-muted hover:text-secondaryText border-b-2 border-transparent',
       )}
       style={on ? { borderColor: color } : undefined}
     >
@@ -813,11 +813,11 @@ function FormatPicker({
   if (!spec.media.altFormats?.length) return null;
   return (
     <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-zinc-400">Format</span>
+      <span className="text-muted">Format</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-white/10 bg-black/30 px-2 py-1 text-zinc-200 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+        className="rounded-md border border-border-strong bg-black/30 px-2 py-1 text-secondaryText focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
       >
         <option value="">
           Default ({spec.media.imageAspectRatio})
@@ -844,13 +844,13 @@ function CharCounter({ spec, count }: { spec: PlatformSpec; count: number }) {
         : 'bg-emerald-400';
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px] text-zinc-400">
+      <div className="flex items-center justify-between text-[11px] text-muted">
         <span>{spec.label}</span>
         <span className={cn(count > limit && 'text-rose-400 font-medium')}>
           {t('composer.chars_of', { count, limit })}
         </span>
       </div>
-      <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+      <div className="h-1 w-full rounded-full bg-surface-soft overflow-hidden">
         <div
           className={cn('h-full transition-all', colour)}
           style={{ width: `${Math.min(ratio * 100, 100)}%` }}
@@ -868,7 +868,7 @@ function PlatformControls({ spec }: { spec: PlatformSpec }) {
 
   if (!hasReplyAudience && !hasAi && !hasPaid) {
     return (
-      <p className="text-[11px] text-zinc-500">
+      <p className="text-[11px] text-muted">
         {t('composer.hashtags_target', {
           min: spec.content.hashtags.min,
           max: spec.content.hashtags.max,
@@ -879,14 +879,14 @@ function PlatformControls({ spec }: { spec: PlatformSpec }) {
 
   return (
     <details className="text-xs">
-      <summary className="cursor-pointer text-zinc-400 hover:text-zinc-200">
+      <summary className="cursor-pointer text-muted hover:text-secondaryText">
         {spec.label} settings
       </summary>
-      <div className="mt-2 space-y-2 pl-3 border-l border-white/10">
+      <div className="mt-2 space-y-2 pl-3 border-l border-border-strong">
         {hasReplyAudience && (
-          <label className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+          <label className="flex items-center justify-between gap-2 text-[11px] text-muted">
             <span>{t('composer.reply_audience')}</span>
-            <select className="rounded border border-white/10 bg-black/30 px-2 py-1 text-zinc-200">
+            <select className="rounded border border-border-strong bg-black/30 px-2 py-1 text-secondaryText">
               {spec.content.replyAudience!.map((a) => (
                 <option key={a} value={a}>
                   {t(`composer.reply.${a}`)}
@@ -896,13 +896,13 @@ function PlatformControls({ spec }: { spec: PlatformSpec }) {
           </label>
         )}
         {hasAi && (
-          <label className="flex items-center gap-2 text-[11px] text-zinc-400">
+          <label className="flex items-center gap-2 text-[11px] text-muted">
             <input type="checkbox" className="accent-indigo-400" />
             {t('composer.ai_disclosure')}
           </label>
         )}
         {hasPaid && (
-          <label className="flex items-center gap-2 text-[11px] text-zinc-400">
+          <label className="flex items-center gap-2 text-[11px] text-muted">
             <input type="checkbox" className="accent-indigo-400" />
             {t('composer.paid_partnership')}
           </label>
@@ -952,13 +952,13 @@ function PreviewPanel({
   }, [firstImage]);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-card p-4">
+    <div className="rounded-xl border border-border-strong bg-card p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">
+        <p className="text-xs uppercase tracking-widest text-muted">
           {t('composer.preview')}
         </p>
         {spec && (
-          <span className="text-[11px] text-zinc-500">
+          <span className="text-[11px] text-muted">
             {spec.media.imageDimensions.width}×{spec.media.imageDimensions.height}
             {' '}·{' '}{spec.media.imageAspectRatio}
           </span>
@@ -966,7 +966,7 @@ function PreviewPanel({
       </div>
 
       {!body && !imageUrl ? (
-        <div className="rounded-lg border border-dashed border-white/10 p-12 text-center text-xs text-zinc-500">
+        <div className="rounded-lg border border-dashed border-border-strong p-12 text-center text-xs text-muted">
           {t('composer.no_content')}
         </div>
       ) : (
@@ -998,13 +998,13 @@ function PreviewCard({
   }, [spec.media.imageAspectRatio]);
 
   return (
-    <div className="mx-auto w-full max-w-sm rounded-lg border border-white/10 overflow-hidden bg-black/40">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+    <div className="mx-auto w-full max-w-sm rounded-lg border border-border-strong overflow-hidden bg-black/40">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border-strong">
         <span style={{ color: spec.color }} className="text-base leading-none">
           {spec.icon}
         </span>
-        <span className="text-xs text-zinc-200 font-medium">{spec.label}</span>
-        <span className="text-[10px] text-zinc-500 ml-auto">
+        <span className="text-xs text-secondaryText font-medium">{spec.label}</span>
+        <span className="text-[10px] text-muted ml-auto">
           {body.length} / {spec.content.charLimit}
         </span>
       </div>
@@ -1016,12 +1016,12 @@ function PreviewCard({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600">
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-faint">
             {spec.media.imageDimensions.width}×{spec.media.imageDimensions.height}
           </div>
         )}
       </div>
-      <div className="p-3 text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
+      <div className="p-3 text-sm text-secondaryText whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {body}
       </div>
     </div>
@@ -1044,8 +1044,8 @@ function CharLimitsTable({
   const t = useT();
   if (selected.size === 0) return null;
   return (
-    <div className="rounded-xl border border-white/10 bg-card p-4">
-      <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">
+    <div className="rounded-xl border border-border-strong bg-card p-4">
+      <p className="text-xs uppercase tracking-widest text-muted mb-3">
         {t('composer.char_limit')}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -1057,13 +1057,13 @@ function CharLimitsTable({
           return (
             <div
               key={id}
-              className="rounded-lg border border-white/10 px-3 py-2"
+              className="rounded-lg border border-border-strong px-3 py-2"
             >
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span style={{ color: spec.color }}>{spec.icon}</span>
-                <span className="text-xs text-zinc-300">{spec.label}</span>
+                <span className="text-xs text-secondaryText">{spec.label}</span>
               </div>
-              <div className={cn('text-sm font-medium', over ? 'text-rose-400' : 'text-zinc-200')}>
+              <div className={cn('text-sm font-medium', over ? 'text-rose-400' : 'text-secondaryText')}>
                 {count} / {spec.content.charLimit}
               </div>
             </div>

@@ -58,7 +58,7 @@ function ConfidenceBar({ value }: { value: number }) {
       <div className="w-16 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[10px] text-zinc-500 w-8">{pct}%</span>
+      <span className="text-[10px] text-muted w-8">{pct}%</span>
     </div>
   );
 }
@@ -98,11 +98,11 @@ export default function LearningsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText flex items-center gap-2">
             <Brain className="w-6 h-6 text-indigo-400" />
             Content Learnings
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+          <p className="text-xs sm:text-sm text-muted mt-1">
             Patterns learned from edits, rejections, and analytics — applied to future content
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function LearningsPage() {
           onClick={() => setFilter('all')}
           className={cn(
             'px-3 py-1.5 rounded-lg text-xs transition-colors',
-            filter === 'all' ? 'bg-white/10 text-white' : 'bg-white/[0.03] text-zinc-500 hover:text-zinc-300'
+            filter === 'all' ? 'bg-surface-medium text-white' : 'bg-surface-faint text-muted hover:text-secondaryText'
           )}
         >
           All ({learnings.length})
@@ -131,7 +131,7 @@ export default function LearningsPage() {
             onClick={() => setFilter(cat)}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs capitalize transition-colors',
-              filter === cat ? 'bg-white/10 text-white' : 'bg-white/[0.03] text-zinc-500 hover:text-zinc-300'
+              filter === cat ? 'bg-surface-medium text-white' : 'bg-surface-faint text-muted hover:text-secondaryText'
             )}
           >
             {cat} ({grouped[cat]?.length ?? 0})
@@ -145,16 +145,16 @@ export default function LearningsPage() {
         </div>
       ) : learnings.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
-          <Brain className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-500">No learnings yet</p>
-          <p className="text-xs text-zinc-600 mt-1">
+          <Brain className="h-10 w-10 text-faint mx-auto mb-3" />
+          <p className="text-sm text-muted">No learnings yet</p>
+          <p className="text-xs text-faint mt-1">
             The system learns from draft edits, rejections, and analytics performance
           </p>
         </div>
       ) : (
         <div className="space-y-2">
           {(filter === 'all' ? learnings : learnings.filter((l: any) => l.category === filter)).map((learning: any) => {
-            const catColor = CATEGORY_COLORS[learning.category] ?? 'text-zinc-400 bg-zinc-500/15';
+            const catColor = CATEGORY_COLORS[learning.category] ?? 'text-muted bg-zinc-500/15';
             const source = SOURCE_ICONS[learning.source_type] ?? SOURCE_ICONS.operator_rule;
 
             return (
@@ -172,24 +172,24 @@ export default function LearningsPage() {
                         {learning.category}
                       </span>
                       {learning.platform && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-muted">
                           {learning.platform}
                         </span>
                       )}
-                      <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                      <span className="text-[10px] text-faint flex items-center gap-1">
                         {source.icon} {source.label}
                       </span>
                       {learning.reinforcement_count > 1 && (
-                        <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                        <span className="text-[10px] text-faint flex items-center gap-1">
                           <TrendingUp className="w-3 h-3" /> {learning.reinforcement_count}x reinforced
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-zinc-200">{learning.content}</p>
+                    <p className="text-sm text-secondaryText">{learning.content}</p>
                     {(learning.tags ?? []).length > 0 && (
                       <div className="flex gap-1 mt-2">
                         {learning.tags.map((tag: string) => (
-                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500">
+                          <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-muted">
                             {tag}
                           </span>
                         ))}
@@ -202,7 +202,7 @@ export default function LearningsPage() {
                     {learning.active && (
                       <button
                         onClick={() => deactivateMutation.mutate(learning.id)}
-                        className="text-zinc-600 hover:text-red-400 transition-colors"
+                        className="text-faint hover:text-red-400 transition-colors"
                         title="Deactivate"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -219,17 +219,17 @@ export default function LearningsPage() {
       {/* Add Rule Modal */}
       {showAddModal && (
         <Modal open={showAddModal} onClose={() => setShowAddModal(false)}>
-          <h3 className="text-lg font-semibold text-zinc-100 mb-4">Add Content Rule</h3>
-          <p className="text-xs text-zinc-500 mb-4">
+          <h3 className="text-lg font-semibold text-primaryText mb-4">Add Content Rule</h3>
+          <p className="text-xs text-muted mb-4">
             Explicit rules have 100% confidence and never decay. Use for hard brand rules.
           </p>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-zinc-400 block mb-1">Category</label>
+              <label className="text-xs text-muted block mb-1">Category</label>
               <select
                 value={newRule.category}
                 onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -237,28 +237,28 @@ export default function LearningsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-zinc-400 block mb-1">Platform (optional)</label>
+              <label className="text-xs text-muted block mb-1">Platform (optional)</label>
               <input
                 value={newRule.platform}
                 onChange={(e) => setNewRule({ ...newRule, platform: e.target.value })}
                 placeholder="e.g. linkedin (leave empty for all)"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint"
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-400 block mb-1">Rule</label>
+              <label className="text-xs text-muted block mb-1">Rule</label>
               <textarea
                 value={newRule.content}
                 onChange={(e) => setNewRule({ ...newRule, content: e.target.value })}
                 placeholder="e.g. Never use clickbait headlines on LinkedIn"
                 rows={3}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 resize-none"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint resize-none"
               />
             </div>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="px-3 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200"
+                className="px-3 py-2 rounded-lg text-xs text-muted hover:text-secondaryText"
               >
                 Cancel
               </button>

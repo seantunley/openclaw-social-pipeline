@@ -119,7 +119,7 @@ export default function InboxPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-faint" />
       </div>
     );
   }
@@ -128,15 +128,15 @@ export default function InboxPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Inbox</h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">Inbox</h1>
+          <p className="text-xs sm:text-sm text-muted mt-1">
             Mentions, comments, and engagement across platforms
           </p>
         </div>
         <div className="rounded-xl border border-dashed border-yellow-500/30 bg-yellow-500/[0.04] p-10 text-center">
           <AlertCircle className="h-10 w-10 text-yellow-500/30 mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">Postiz is not configured</p>
-          <p className="text-xs text-zinc-600 mt-1">
+          <p className="text-sm text-muted">Postiz is not configured</p>
+          <p className="text-xs text-faint mt-1">
             Add your Postiz API key in Settings to enable the engagement inbox. The inbox pulls
             mentions, comments, and DMs from all connected platforms.
           </p>
@@ -153,22 +153,22 @@ export default function InboxPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Inbox</h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">Inbox</h1>
+          <p className="text-xs sm:text-sm text-muted mt-1">
             Mentions, comments, and engagement across platforms &middot; {notifications.length} items
           </p>
         </div>
         <button
           onClick={() => loadInbox(true)}
           disabled={refreshing}
-          className="rounded-lg border border-zinc-800 px-3 py-2 text-xs text-zinc-400 hover:text-white hover:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+          className="rounded-lg border border-zinc-800 px-3 py-2 text-xs text-muted hover:text-white hover:border-zinc-600 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
 
       {/* Filter bar */}
-      <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5 border border-zinc-800 w-fit">
+      <div className="flex gap-1 bg-surface-faint rounded-lg p-0.5 border border-zinc-800 w-fit">
         {[
           { id: 'all', label: 'All' },
           { id: 'comment', label: 'Comments' },
@@ -180,7 +180,7 @@ export default function InboxPage() {
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              filter === f.id ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
+              filter === f.id ? 'bg-surface-medium text-white shadow-sm' : 'text-muted hover:text-secondaryText'
             }`}
           >
             {f.label}
@@ -191,11 +191,11 @@ export default function InboxPage() {
       {/* Notifications list */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
-          <Inbox className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-500">
+          <Inbox className="h-10 w-10 text-faint mx-auto mb-3" />
+          <p className="text-sm text-muted">
             {notifications.length === 0 ? 'No notifications yet' : 'No matching notifications'}
           </p>
-          <p className="text-xs text-zinc-600 mt-1">
+          <p className="text-xs text-faint mt-1">
             Engagement from your connected platforms will appear here
           </p>
         </div>
@@ -223,7 +223,7 @@ export default function InboxPage() {
                   <div className="flex-1 min-w-0">
                     {/* Header row */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-zinc-200">
+                      <span className="text-sm font-medium text-secondaryText">
                         {item.author?.name ?? item.username ?? 'Unknown'}
                       </span>
                       <span
@@ -237,19 +237,19 @@ export default function InboxPage() {
                       >
                         {item.platform}
                       </span>
-                      <span className="text-[10px] text-zinc-600 ml-auto shrink-0">
+                      <span className="text-[10px] text-faint ml-auto shrink-0">
                         {item.createdAt ? getRelativeTime(item.createdAt) : ''}
                       </span>
                     </div>
 
                     {/* Content */}
                     {item.content && (
-                      <p className="text-sm text-zinc-400 mt-1.5 leading-relaxed">{item.content}</p>
+                      <p className="text-sm text-muted mt-1.5 leading-relaxed">{item.content}</p>
                     )}
 
                     {/* Post context */}
                     {item.postTitle && (
-                      <p className="text-xs text-zinc-600 mt-1 truncate">on: {item.postTitle}</p>
+                      <p className="text-xs text-faint mt-1 truncate">on: {item.postTitle}</p>
                     )}
 
                     {/* Actions */}
@@ -259,13 +259,13 @@ export default function InboxPage() {
                           setReplyingTo(isReplying ? null : (item.id ?? String(i)));
                           setReplyText('');
                         }}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
+                        className="text-[11px] text-muted hover:text-secondaryText flex items-center gap-1 transition-colors"
                       >
                         <MessageCircle className="h-3 w-3" /> Reply
                       </button>
                       <button
                         onClick={() => handleReact(item.postId ?? item.id)}
-                        className="text-[11px] text-zinc-500 hover:text-pink-400 flex items-center gap-1 transition-colors"
+                        className="text-[11px] text-muted hover:text-pink-400 flex items-center gap-1 transition-colors"
                       >
                         <Heart className="h-3 w-3" /> Like
                       </button>
@@ -274,7 +274,7 @@ export default function InboxPage() {
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
+                          className="text-[11px] text-muted hover:text-secondaryText flex items-center gap-1 transition-colors"
                         >
                           <ExternalLink className="h-3 w-3" /> View
                         </a>
@@ -292,7 +292,7 @@ export default function InboxPage() {
                             handleReply(item.postId ?? item.id, item.commentId ?? item.id)
                           }
                           placeholder="Write a reply..."
-                          className="flex-1 bg-white/[0.03] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500"
+                          className="flex-1 bg-surface-faint border border-zinc-800 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint focus:outline-none focus:border-indigo-500"
                           autoFocus
                         />
                         <button

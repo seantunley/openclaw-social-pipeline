@@ -21,7 +21,7 @@ export default function StatCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6',
+        'relative overflow-hidden rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-6',
         className
       )}
     >
@@ -29,7 +29,7 @@ export default function StatCard({
       <div className="relative flex items-start justify-between">
         <div>
           <p className="text-sm text-muted">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-zinc-100">{value}</p>
+          <p className="mt-2 text-3xl font-bold text-primaryText">{value}</p>
           {trend && (
             <p
               className={cn(
@@ -42,8 +42,8 @@ export default function StatCard({
             </p>
           )}
         </div>
-        <div className="rounded-lg bg-white/10 p-3">
-          <Icon className="h-5 w-5 text-zinc-300" />
+        <div className="rounded-lg bg-surface-medium p-3">
+          <Icon className="h-5 w-5 text-secondaryText" />
         </div>
       </div>
     </div>

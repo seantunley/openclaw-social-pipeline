@@ -59,8 +59,8 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Analytics</h1>
-        <p className="text-zinc-400 mt-1">Performance metrics from Postiz</p>
+        <h1 className="text-2xl font-bold text-primaryText">Analytics</h1>
+        <p className="text-muted mt-1">Performance metrics from Postiz</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -91,8 +91,8 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-6">
-          <h3 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+        <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
+          <h3 className="text-sm font-medium text-secondaryText mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-indigo-400" />
             Engagement Over Time
           </h3>
@@ -116,8 +116,8 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-6">
-          <h3 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+        <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
+          <h3 className="text-sm font-medium text-secondaryText mb-4 flex items-center gap-2">
             <Share2 className="w-4 h-4 text-indigo-400" />
             Performance by Platform
           </h3>
@@ -141,22 +141,22 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-6">
-        <h3 className="text-sm font-medium text-zinc-300 mb-4">Top Performing Posts</h3>
+      <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
+        <h3 className="text-sm font-medium text-secondaryText mb-4">Top Performing Posts</h3>
         {publishedRuns.length === 0 ? (
-          <p className="text-zinc-500 text-sm">No published posts with analytics yet. Sync analytics from Postiz to see results.</p>
+          <p className="text-muted text-sm">No published posts with analytics yet. Sync analytics from Postiz to see results.</p>
         ) : (
           <div className="space-y-3">
             {publishedRuns.slice(0, 5).map((run: any, i: number) => (
               <div key={run.id} className="flex items-center gap-4 py-2 border-b border-zinc-800 last:border-0">
-                <span className="text-xs text-zinc-600 w-6">{i + 1}.</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 w-20 text-center">
+                <span className="text-xs text-faint w-6">{i + 1}.</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-secondaryText w-20 text-center">
                   {run.platform}
                 </span>
-                <span className="text-sm text-zinc-300 flex-1 truncate">
+                <span className="text-sm text-secondaryText flex-1 truncate">
                   {run.brief?.topic || `Run ${run.id?.slice(0, 8)}`}
                 </span>
-                <span className="text-xs text-zinc-500">{run.created_at?.split('T')[0]}</span>
+                <span className="text-xs text-muted">{run.created_at?.split('T')[0]}</span>
               </div>
             ))}
           </div>

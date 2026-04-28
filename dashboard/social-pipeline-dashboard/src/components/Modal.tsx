@@ -40,15 +40,15 @@ export default function Modal({ open, onClose, title, children, className }: Mod
       />
       <div
         className={cn(
-          'relative w-full max-w-lg rounded-xl border border-white/10 bg-card p-6 shadow-2xl',
+          'relative w-full max-w-lg rounded-xl border border-border-strong bg-card p-6 shadow-2xl',
           className
         )}
       >
         <div className="flex items-center justify-between mb-4">
-          {title && <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>}
+          {title && <h3 className="text-lg font-semibold text-primaryText">{title}</h3>}
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-colors ml-auto"
+            className="rounded-lg p-1.5 text-muted hover:text-secondaryText hover:bg-surface-medium transition-colors ml-auto"
           >
             <X className="h-4 w-4" />
           </button>

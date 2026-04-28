@@ -35,7 +35,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
 
   return (
     <>
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm overflow-hidden">
         <div className="flex">
           {run.mediaThumbnail ? (
             <div className="w-32 h-32 flex-shrink-0 bg-zinc-800">
@@ -47,7 +47,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
             </div>
           ) : (
             <div className="w-32 h-32 flex-shrink-0 bg-zinc-800 flex items-center justify-center">
-              <ImageIcon className="h-8 w-8 text-zinc-600" />
+              <ImageIcon className="h-8 w-8 text-faint" />
             </div>
           )}
           <div className="flex-1 p-4">
@@ -62,15 +62,15 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
                 <span className="text-xs text-muted ml-auto">{run.campaign}</span>
               )}
             </div>
-            <p className="text-sm text-zinc-300 line-clamp-3">
+            <p className="text-sm text-secondaryText line-clamp-3">
               {run.content || 'No content preview available'}
             </p>
             {run.createdAt && (
-              <p className="mt-1 text-xs text-zinc-500">{formatDate(run.createdAt)}</p>
+              <p className="mt-1 text-xs text-muted">{formatDate(run.createdAt)}</p>
             )}
           </div>
         </div>
-        <div className="flex border-t border-white/10">
+        <div className="flex border-t border-border-strong">
           <button
             onClick={() => onApprove(run.id)}
             className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors"
@@ -80,14 +80,14 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
           </button>
           <button
             onClick={() => setModalType('reject')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors border-l border-white/10"
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors border-l border-border-strong"
           >
             <XCircle className="h-4 w-4" />
             Reject
           </button>
           <button
             onClick={() => setModalType('revise')}
-            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-yellow-400 hover:bg-yellow-500/10 transition-colors border-l border-white/10"
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-yellow-400 hover:bg-yellow-500/10 transition-colors border-l border-border-strong"
           >
             <RotateCcw className="h-4 w-4" />
             Revise
@@ -113,7 +113,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
                 : 'Revision notes...'
             }
             rows={4}
-            className="w-full rounded-lg bg-zinc-800 border border-white/10 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-3 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />
           <div className="flex justify-end gap-3">
             <button
@@ -121,7 +121,7 @@ export default function ApprovalCard({ run, onApprove, onReject, onRevise }: App
                 setModalType(null);
                 setNotes('');
               }}
-              className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="rounded-lg px-4 py-2 text-sm text-muted hover:text-secondaryText transition-colors"
             >
               Cancel
             </button>

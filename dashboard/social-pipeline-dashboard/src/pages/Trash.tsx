@@ -11,8 +11,10 @@ import {
   emptyTrash,
 } from '@/lib/api';
 import { formatDate, formatRelative } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 export default function TrashPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null);
@@ -85,7 +87,7 @@ export default function TrashPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-primaryText flex items-center gap-2">
             <Trash className="h-6 w-6" /> Trash
           </h1>
           <p className="mt-1 text-sm text-muted">
@@ -112,7 +114,7 @@ export default function TrashPage() {
         message={
           <>
             <p>This run will be permanently removed along with its drafts, stages, media, and approval records.</p>
-            <p className="mt-2 text-zinc-400">This cannot be undone.</p>
+            <p className="mt-2 text-muted">This cannot be undone.</p>
           </>
         }
         confirmLabel="Permanently delete"
@@ -132,7 +134,7 @@ export default function TrashPage() {
             <p>
               Every run currently in the trash will be permanently removed along with its drafts, stages, media, and approval records.
             </p>
-            <p className="mt-2 text-zinc-400">This cannot be undone.</p>
+            <p className="mt-2 text-muted">This cannot be undone.</p>
           </>
         }
         confirmLabel="Empty trash"
@@ -148,10 +150,10 @@ export default function TrashPage() {
         />
       )}
 
-      <div className="rounded-xl border border-white/10 overflow-hidden">
+      <div className="rounded-xl border border-border-strong overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.03]">
+            <tr className="border-b border-border-strong bg-surface-faint">
               <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                 Status (when trashed)
               </th>
@@ -177,33 +179,33 @@ export default function TrashPage() {
               [1, 2, 3].map((i) => (
                 <tr key={i}>
                   <td colSpan={6} className="px-4 py-4">
-                    <div className="h-5 rounded bg-white/5 animate-skeleton-pulse" />
+                    <div className="h-5 rounded bg-surface-soft animate-skeleton-pulse" />
                   </td>
                 </tr>
               ))
             ) : runs.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-16 text-center">
-                  <Trash className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-sm text-zinc-500">Trash is empty.</p>
+                  <Trash className="h-10 w-10 text-faint mx-auto mb-3" />
+                  <p className="text-sm text-muted">Trash is empty.</p>
                 </td>
               </tr>
             ) : (
               runs.map((run) => (
-                <tr key={run.id} className="hover:bg-white/[0.02]">
+                <tr key={run.id} className="hover:bg-surface-faint">
                   <td className="px-4 py-3">
                     <StatusBadge status={run.status} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-300 capitalize">
+                  <td className="px-4 py-3 text-sm text-secondaryText capitalize">
                     {run.platform}
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-300">
+                  <td className="px-4 py-3 text-sm text-secondaryText">
                     {run.campaign}
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">
+                  <td className="px-4 py-3 text-sm text-muted">
                     {formatDate(run.createdAt)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">
+                  <td className="px-4 py-3 text-sm text-muted">
                     {formatRelative(run.deletedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -220,7 +222,7 @@ export default function TrashPage() {
                       <button
                         onClick={() => setConfirmState({ kind: 'purge-one', id: run.id })}
                         disabled={busy === `purge:${run.id}`}
-                        className="rounded-md p-1.5 text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="rounded-md p-1.5 text-muted hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50"
                         title="Permanently delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

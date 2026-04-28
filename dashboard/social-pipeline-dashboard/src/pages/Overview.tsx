@@ -171,7 +171,7 @@ export default function Overview() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[260px] text-zinc-500 text-sm">
+            <div className="flex items-center justify-center h-[260px] text-muted text-sm">
               {t('overview.no_data')}
             </div>
           )}

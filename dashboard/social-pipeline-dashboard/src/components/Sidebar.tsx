@@ -133,7 +133,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {visibleGroups.map((group) => (
           <div key={group.headingKey}>
-            <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
               {t(group.headingKey)}
             </p>
             <div className="space-y-0.5">
@@ -156,11 +156,11 @@ export default function Sidebar() {
           <div className="flex-1"><LanguagePicker /></div>
           <ThemeToggle />
         </div>
-        <div className="rounded-lg bg-white/5 px-3 py-2">
-          <p className="text-[10px] text-zinc-500">{t('app.pipeline_status')}</p>
+        <div className="rounded-lg bg-surface-soft px-3 py-2">
+          <p className="text-[10px] text-muted">{t('app.pipeline_status')}</p>
           <div className="mt-0.5 flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-zinc-300">{t('app.connected')}</span>
+            <span className="text-xs text-secondaryText">{t('app.connected')}</span>
           </div>
         </div>
       </div>
@@ -186,7 +186,7 @@ function SidebarLink({ item }: { item: NavItem }) {
           'flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
           isActive
             ? 'bg-brand-purple/15 text-brand-cyan ring-1 ring-brand-purple/30'
-            : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5',
+            : 'text-muted hover:text-secondaryText hover:bg-surface-soft',
         )
       }
     >
@@ -225,19 +225,19 @@ function LanguagePicker() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-zinc-300 hover:bg-white/10"
+        className="flex w-full items-center gap-2 rounded-lg bg-surface-soft px-3 py-2 text-xs text-secondaryText hover:bg-surface-medium"
       >
         <Flag id={active.id} size={18} />
         <span className="flex-1 text-left truncate">{active.label}</span>
         <ChevronDown
           className={cn(
-            'h-3 w-3 text-zinc-500 transition-transform',
+            'h-3 w-3 text-muted transition-transform',
             open && 'rotate-180',
           )}
         />
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-white/10 bg-zinc-900 shadow-lg overflow-hidden">
+        <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-border-strong bg-zinc-900 shadow-lg overflow-hidden">
           {LOCALES.map((l) => (
             <button
               key={l.id}
@@ -247,8 +247,8 @@ function LanguagePicker() {
                 setOpen(false);
               }}
               className={cn(
-                'flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-white/5',
-                l.id === locale ? 'text-brand-cyan' : 'text-zinc-300',
+                'flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-surface-soft',
+                l.id === locale ? 'text-brand-cyan' : 'text-secondaryText',
               )}
             >
               <Flag id={l.id} size={18} />
@@ -276,7 +276,7 @@ function ThemeToggle() {
       onClick={toggle}
       title={isDark ? t('app.theme.switch_to_light') : t('app.theme.switch_to_dark')}
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className="flex items-center justify-center rounded-lg bg-white/5 px-3 py-2 text-zinc-300 hover:bg-white/10"
+      className="flex items-center justify-center rounded-lg bg-surface-soft px-3 py-2 text-secondaryText hover:bg-surface-medium"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>

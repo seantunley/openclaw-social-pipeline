@@ -122,7 +122,7 @@ export default function BrandVoice() {
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-primaryText flex items-center gap-2">
             <Sparkles className="h-6 w-6" /> Brand voice
           </h1>
           <p className="mt-1 text-sm text-muted">
@@ -147,7 +147,7 @@ export default function BrandVoice() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-12 rounded-lg bg-white/5 animate-skeleton-pulse" />
+            <div key={i} className="h-12 rounded-lg bg-surface-soft animate-skeleton-pulse" />
           ))}
         </div>
       ) : (
@@ -213,8 +213,8 @@ export default function BrandVoice() {
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
-      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">{label}</h3>
+    <div className="rounded-xl border border-border-strong bg-surface-faint p-5 space-y-3">
+      <h3 className="text-sm font-semibold text-secondaryText uppercase tracking-wider">{label}</h3>
       {children}
     </div>
   );
@@ -233,13 +233,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-sm text-primaryText placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </label>
   );
@@ -260,13 +260,13 @@ function Textarea({
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <textarea
         rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-sm text-primaryText placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </label>
   );
@@ -285,11 +285,11 @@ function Select({
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-sm text-primaryText focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         {options.map((o) => (
           <option key={o} value={o} className="bg-zinc-900">
@@ -312,8 +312,8 @@ function ColorField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400">{label}</span>
-      <div className="mt-1 flex items-center gap-2 rounded-lg bg-black/30 border border-white/10 px-2 py-1.5">
+      <span className="text-xs text-muted">{label}</span>
+      <div className="mt-1 flex items-center gap-2 rounded-lg bg-black/30 border border-border-strong px-2 py-1.5">
         <input
           type="color"
           value={value || '#000000'}
@@ -325,7 +325,7 @@ function ColorField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#000000"
-          className="flex-1 bg-transparent text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none font-mono"
+          className="flex-1 bg-transparent text-sm text-primaryText placeholder:text-faint focus:outline-none font-mono"
         />
       </div>
     </label>

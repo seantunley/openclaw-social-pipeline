@@ -63,15 +63,15 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">{t('settings.title')}</h1>
-        <p className="text-zinc-400 mt-1 text-sm">{t('settings.subtitle')}</p>
+        <h1 className="text-2xl font-bold text-primaryText">{t('settings.title')}</h1>
+        <p className="text-muted mt-1 text-sm">{t('settings.subtitle')}</p>
       </div>
 
       {toast && (
         <Toast kind={toast.kind} message={toast.message} onDismiss={() => setToast(null)} />
       )}
 
-      <div className="flex flex-wrap gap-1 border-b border-white/10">
+      <div className="flex flex-wrap gap-1 border-b border-border-strong">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = tab.key === activeTab;
@@ -81,7 +81,7 @@ export default function Settings() {
               onClick={() => setActiveTab(tab.key)}
               className={cn(
                 'relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                active ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
+                active ? 'text-primaryText' : 'text-muted hover:text-secondaryText',
               )}
             >
               <Icon className="h-4 w-4" />
@@ -142,26 +142,26 @@ function AuthTab() {
 function EnvGroup({ label, vars }: { label: string; vars: EnvVarInfo[] }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-widest text-zinc-500 mb-2">{label}</p>
+      <p className="text-[11px] uppercase tracking-widest text-muted mb-2">{label}</p>
       <div className="space-y-1.5">
         {vars.map((v) => (
           <div
             key={v.name}
-            className="flex items-center justify-between rounded-md bg-white/[0.03] border border-white/5 px-3 py-2"
+            className="flex items-center justify-between rounded-md bg-surface-faint border border-border-strong px-3 py-2"
           >
-            <code className="text-xs text-zinc-300">{v.name}</code>
+            <code className="text-xs text-secondaryText">{v.name}</code>
             <div className="flex items-center gap-2 text-xs">
               {v.set ? (
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   <span className="text-emerald-300">
-                    {v.value ? <code className="text-zinc-300">{v.value}</code> : `set (${v.length} chars)`}
+                    {v.value ? <code className="text-secondaryText">{v.value}</code> : `set (${v.length} chars)`}
                   </span>
                 </>
               ) : (
                 <>
-                  <XCircle className="h-3.5 w-3.5 text-zinc-600" />
-                  <span className="text-zinc-500">not set</span>
+                  <XCircle className="h-3.5 w-3.5 text-faint" />
+                  <span className="text-muted">not set</span>
                 </>
               )}
             </div>
@@ -401,7 +401,7 @@ function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message:
         title="Image generation"
         subtitle="Order of providers tried at runtime: fal.ai → OpenAI gpt-image-1. Configure keys in engine/.env (FAL_API_KEY, OPENAI_API_KEY)."
       >
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           No editable fields here yet — provider order is hard-coded with graceful fallback. The
           first working provider wins; if both fail, the pipeline still produces text-only output.
         </p>
@@ -417,10 +417,10 @@ function PlatformsTab() {
   return (
     <div className="space-y-4 max-w-5xl">
       <div>
-        <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">
+        <h2 className="text-sm font-semibold text-secondaryText uppercase tracking-wider">
           {t('settings.platforms.title')}
         </h2>
-        <p className="mt-1 text-xs text-zinc-500 leading-relaxed max-w-2xl">
+        <p className="mt-1 text-xs text-muted leading-relaxed max-w-2xl">
           {t('settings.platforms.subtitle')}
         </p>
       </div>
@@ -437,17 +437,17 @@ function PlatformsTab() {
 function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
   const t = useT();
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-border-strong bg-surface-faint overflow-hidden">
       <div
-        className="flex items-center gap-3 px-4 py-3 border-b border-white/10"
+        className="flex items-center gap-3 px-4 py-3 border-b border-border-strong"
         style={{ background: `linear-gradient(90deg, ${spec.color}18, transparent)` }}
       >
         <span style={{ color: spec.color }} className="text-xl leading-none">
           {spec.icon}
         </span>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-zinc-100">{spec.label}</h3>
-          <code className="text-[10px] uppercase tracking-widest text-zinc-500">{spec.id}</code>
+          <h3 className="text-sm font-semibold text-primaryText">{spec.label}</h3>
+          <code className="text-[10px] uppercase tracking-widest text-muted">{spec.id}</code>
         </div>
       </div>
 
@@ -455,11 +455,11 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
         {/* Content section */}
         <Section title={t('settings.platforms.content_section')}>
           <SpecRow icon={Hash} label={t('settings.platforms.char_limit')}>
-            <span className="font-medium text-zinc-200">
+            <span className="font-medium text-secondaryText">
               {spec.content.charLimit.toLocaleString()}
             </span>
             {spec.content.premiumLimit && (
-              <span className="text-zinc-500">
+              <span className="text-muted">
                 {' '}/ {t('settings.platforms.premium_limit')}{' '}
                 {spec.content.premiumLimit.toLocaleString()}
               </span>
@@ -480,7 +480,7 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
                 {spec.content.disclosures.map((d) => (
                   <span
                     key={d}
-                    className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-300"
+                    className="inline-flex items-center rounded-full border border-border-strong bg-surface-soft px-1.5 py-0.5 text-[10px] text-secondaryText"
                   >
                     {t(`settings.platforms.disclosure.${d}`)}
                   </span>
@@ -498,8 +498,8 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
         {/* Media section */}
         <Section title={t('settings.platforms.media_section')}>
           <SpecRow icon={ImageIcon} label={t('settings.platforms.image_aspect')}>
-            <span className="font-medium text-zinc-200">{spec.media.imageAspectRatio}</span>
-            <span className="text-zinc-500">
+            <span className="font-medium text-secondaryText">{spec.media.imageAspectRatio}</span>
+            <span className="text-muted">
               {' '}· {spec.media.imageDimensions.width}×{spec.media.imageDimensions.height}
             </span>
           </SpecRow>
@@ -509,9 +509,9 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
                 {spec.media.altFormats.map((f) => (
                   <span
                     key={f.id}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-300"
+                    className="inline-flex items-center gap-1 rounded-full border border-border-strong bg-surface-soft px-1.5 py-0.5 text-[10px] text-secondaryText"
                   >
-                    {f.label} <code className="text-zinc-500">{f.aspectRatio}</code>
+                    {f.label} <code className="text-muted">{f.aspectRatio}</code>
                   </span>
                 ))}
               </div>
@@ -521,7 +521,7 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
             {formatDuration(spec.media.videoMaxDurationSec, t)}
           </SpecRow>
           <SpecRow icon={Layers} label={t('settings.platforms.carousel')}>
-            <span className={spec.media.supportsCarousel ? 'text-emerald-300' : 'text-zinc-500'}>
+            <span className={spec.media.supportsCarousel ? 'text-emerald-300' : 'text-muted'}>
               {spec.media.supportsCarousel
                 ? t('settings.platforms.yes')
                 : t('settings.platforms.no')}
@@ -532,13 +532,13 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
         {/* Import section */}
         <Section title={t('settings.platforms.import_section')}>
           <SpecRow icon={FileJson} label={t('settings.platforms.file')}>
-            <code className="text-zinc-300">{spec.import.files}</code>
+            <code className="text-secondaryText">{spec.import.files}</code>
           </SpecRow>
           <SpecRow icon={Info} label={t('settings.platforms.where')}>
-            <span className="text-zinc-400">{spec.import.hint}</span>
+            <span className="text-muted">{spec.import.hint}</span>
           </SpecRow>
           <SpecRow icon={Upload} label={t('settings.platforms.accepted')}>
-            <code className="text-zinc-400">{spec.import.accept}</code>
+            <code className="text-muted">{spec.import.accept}</code>
           </SpecRow>
         </Section>
       </div>
@@ -549,7 +549,7 @@ function PlatformSpecCard({ spec }: { spec: PlatformSpec }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">{title}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted mb-2">{title}</p>
       <div className="space-y-1.5">{children}</div>
     </div>
   );
@@ -566,9 +566,9 @@ function SpecRow({
 }) {
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
-      <Icon className="h-3 w-3 mt-0.5 text-zinc-600 shrink-0" />
-      <span className="text-zinc-500">{label}</span>
-      <div className="text-right text-zinc-300 min-w-0">{children}</div>
+      <Icon className="h-3 w-3 mt-0.5 text-faint shrink-0" />
+      <span className="text-muted">{label}</span>
+      <div className="text-right text-secondaryText min-w-0">{children}</div>
     </div>
   );
 }
@@ -654,7 +654,7 @@ function ImportTab({ onToast }: { onToast: (t: { kind: ToastKind; message: strin
       <Card title={t('settings.import.title')} subtitle={t('settings.import.subtitle')}>
         <div className="space-y-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-2">
+            <p className="text-xs uppercase tracking-widest text-muted mb-2">
               {t('settings.import.pick_platform')}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -670,7 +670,7 @@ function ImportTab({ onToast }: { onToast: (t: { kind: ToastKind; message: strin
                       'flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium text-left transition-colors',
                       on
                         ? 'border-indigo-400/50 bg-indigo-500/10 text-indigo-200'
-                        : 'border-white/10 text-zinc-300 hover:bg-white/5',
+                        : 'border-border-strong text-secondaryText hover:bg-surface-soft',
                     )}
                   >
                     <span style={{ color: p.color }} className="text-base">{p.icon}</span>
@@ -681,22 +681,22 @@ function ImportTab({ onToast }: { onToast: (t: { kind: ToastKind; message: strin
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-black/20 p-4 space-y-2 text-sm">
-            <div className="flex items-start gap-2 text-zinc-300">
-              <FileJson className="h-4 w-4 mt-0.5 text-zinc-500 shrink-0" />
+          <div className="rounded-lg border border-border-strong bg-black/20 p-4 space-y-2 text-sm">
+            <div className="flex items-start gap-2 text-secondaryText">
+              <FileJson className="h-4 w-4 mt-0.5 text-muted shrink-0" />
               <div>
-                <p className="text-zinc-200 font-medium">{spec.import.files}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{spec.import.hint}</p>
+                <p className="text-secondaryText font-medium">{spec.import.files}</p>
+                <p className="text-xs text-muted mt-0.5">{spec.import.hint}</p>
               </div>
             </div>
-            <div className="text-xs text-zinc-500">
-              {t('settings.import.accepted')}: <code className="text-zinc-300">{spec.import.accept}</code>
+            <div className="text-xs text-muted">
+              {t('settings.import.accepted')}: <code className="text-secondaryText">{spec.import.accept}</code>
             </div>
           </div>
 
           <label
             className={cn(
-              'flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/15 bg-black/20 px-6 py-8 text-sm text-zinc-300 cursor-pointer hover:bg-white/[0.03]',
+              'flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/15 bg-black/20 px-6 py-8 text-sm text-secondaryText cursor-pointer hover:bg-surface-faint',
               importMutation.isPending && 'opacity-60 cursor-wait',
             )}
           >
@@ -726,7 +726,7 @@ function ImportTab({ onToast }: { onToast: (t: { kind: ToastKind; message: strin
         {isLoading ? (
           <Skeleton lines={3} />
         ) : !data?.batches?.length ? (
-          <p className="text-sm text-zinc-500">{t('settings.import.no_history')}</p>
+          <p className="text-sm text-muted">{t('settings.import.no_history')}</p>
         ) : (
           <div className="space-y-2">
             {data.batches.map((b) => (
@@ -782,18 +782,18 @@ function BatchRow({ batch, onDelete }: { batch: ImportBatch; onDelete: () => voi
   const spec = getPlatformSpec(batch.platform);
   const date = new Date(batch.created_at).toLocaleString();
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
+    <div className="flex items-center gap-3 rounded-lg border border-border-strong bg-surface-faint px-3 py-2">
       <span style={{ color: spec.color }} className="text-base">{spec.icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-zinc-200 truncate">{batch.filename || spec.label}</p>
-        <p className="text-[11px] text-zinc-500">
+        <p className="text-sm text-secondaryText truncate">{batch.filename || spec.label}</p>
+        <p className="text-[11px] text-muted">
           {batch.total_posts.toLocaleString()} posts · {(batch.file_size / 1024).toFixed(0)} KB · {date}
         </p>
       </div>
       <button
         type="button"
         onClick={onDelete}
-        className="flex items-center gap-1.5 rounded-md p-1.5 text-zinc-500 hover:bg-white/5 hover:text-rose-400"
+        className="flex items-center gap-1.5 rounded-md p-1.5 text-muted hover:bg-surface-soft hover:text-rose-400"
         aria-label="Delete batch"
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -808,26 +808,26 @@ function SystemTab() {
   return (
     <div className="space-y-6 max-w-3xl">
       <Card title="Pointers">
-        <ul className="space-y-2 text-sm text-zinc-300">
+        <ul className="space-y-2 text-sm text-secondaryText">
           <li className="flex justify-between">
-            <span className="text-zinc-500">Engine version</span>
-            <code className="text-zinc-300">0.2.0</code>
+            <span className="text-muted">Engine version</span>
+            <code className="text-secondaryText">0.2.0</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-zinc-500">Dashboard</span>
-            <code className="text-zinc-300">http://localhost:3001</code>
+            <span className="text-muted">Dashboard</span>
+            <code className="text-secondaryText">http://localhost:3001</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-zinc-500">API</span>
-            <code className="text-zinc-300">http://localhost:3000</code>
+            <span className="text-muted">API</span>
+            <code className="text-secondaryText">http://localhost:3000</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-zinc-500">DB path</span>
-            <code className="text-zinc-300">engine/data/social-pipeline.db</code>
+            <span className="text-muted">DB path</span>
+            <code className="text-secondaryText">engine/data/social-pipeline.db</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-zinc-500">Codex auth file</span>
-            <code className="text-zinc-300">~/.codex/auth.json</code>
+            <span className="text-muted">Codex auth file</span>
+            <code className="text-secondaryText">~/.codex/auth.json</code>
           </li>
         </ul>
       </Card>
@@ -851,7 +851,7 @@ function SystemTab() {
               once per run and gate stages on it.
             </span>
           </p>
-          <p className="flex items-start gap-2 text-zinc-400">
+          <p className="flex items-start gap-2 text-muted">
             <Info className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
               <strong>Not yet built:</strong> multi-angle research (7 topics → operator picks),
@@ -876,10 +876,10 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
+    <div className="rounded-xl border border-border-strong bg-surface-faint p-6 space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">{title}</h3>
-        {subtitle && <p className="mt-1 text-xs text-zinc-500 leading-relaxed">{subtitle}</p>}
+        <h3 className="text-sm font-semibold text-secondaryText uppercase tracking-wider">{title}</h3>
+        {subtitle && <p className="mt-1 text-xs text-muted leading-relaxed">{subtitle}</p>}
       </div>
       <div className="space-y-3">{children}</div>
     </div>
@@ -906,7 +906,7 @@ function Status({ state, note }: { state: 'wired' | 'implicit' | 'not-wired'; no
       <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium', color)}>
         {label}
       </span>
-      {note && <span className="text-[11px] text-zinc-500 max-w-[24ch] text-right">{note}</span>}
+      {note && <span className="text-[11px] text-muted max-w-[24ch] text-right">{note}</span>}
     </div>
   );
 }
@@ -914,7 +914,7 @@ function Status({ state, note }: { state: 'wired' | 'implicit' | 'not-wired'; no
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-center justify-between cursor-pointer">
-      <span className="text-sm text-zinc-300">{label}</span>
+      <span className="text-sm text-secondaryText">{label}</span>
       <button
         type="button"
         onClick={() => onChange(!value)}
@@ -949,14 +949,14 @@ function NumberInput({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-zinc-300">{label}</span>
+      <span className="text-sm text-secondaryText">{label}</span>
       <input
         type="number"
         min={min}
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-20 bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-20 bg-zinc-900 border border-border-strong rounded-lg px-3 py-1.5 text-sm text-secondaryText focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
   );
@@ -975,13 +975,13 @@ function TextInput({
 }) {
   return (
     <div className="space-y-1 flex-1 min-w-0">
-      <label className="text-sm text-zinc-300">{label}</label>
+      <label className="text-sm text-secondaryText">{label}</label>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full bg-zinc-900 border border-border-strong rounded-lg px-3 py-2 text-sm text-secondaryText focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
   );
@@ -1000,11 +1000,11 @@ function SelectField({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-zinc-300">{label}</span>
+      <span className="text-sm text-secondaryText">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="bg-zinc-900 border border-border-strong rounded-lg px-3 py-1.5 text-sm text-secondaryText focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value} className="bg-zinc-900">
@@ -1029,7 +1029,7 @@ function MultiSelect({
 }) {
   return (
     <div className="space-y-2">
-      <span className="text-sm text-zinc-300">{label}</span>
+      <span className="text-sm text-secondaryText">{label}</span>
       <div className="flex flex-wrap gap-1.5">
         {options.map((opt) => (
           <button
@@ -1042,7 +1042,7 @@ function MultiSelect({
               'px-2.5 py-1 rounded-full text-xs transition-colors',
               value.includes(opt)
                 ? 'bg-indigo-600 text-white'
-                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
+                : 'bg-zinc-800 text-muted hover:bg-zinc-700',
             )}
           >
             {opt}
@@ -1057,7 +1057,7 @@ function Skeleton({ lines = 5 }: { lines?: number }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="h-8 rounded bg-white/5 animate-skeleton-pulse" />
+        <div key={i} className="h-8 rounded bg-surface-soft animate-skeleton-pulse" />
       ))}
     </div>
   );

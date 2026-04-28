@@ -76,30 +76,30 @@ export default function DateTimePicker({ value, onChange, min }: DateTimePickerP
   };
 
   return (
-    <div className="rounded-md border border-white/10 bg-black/30 p-3 space-y-3">
+    <div className="rounded-md border border-border-strong bg-black/30 p-3 space-y-3">
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => stepMonth(-1)}
-          className="rounded p-1 text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+          className="rounded p-1 text-muted hover:bg-surface-soft hover:text-secondaryText"
           aria-label="Previous month"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <div className="text-xs font-medium text-zinc-200">
+        <div className="text-xs font-medium text-secondaryText">
           {MONTHS[viewMonth]} {viewYear}
         </div>
         <button
           type="button"
           onClick={() => stepMonth(1)}
-          className="rounded p-1 text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+          className="rounded p-1 text-muted hover:bg-surface-soft hover:text-secondaryText"
           aria-label="Next month"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-[10px] text-zinc-500">
+      <div className="grid grid-cols-7 gap-1 text-[10px] text-muted">
         {WEEKDAYS.map((w) => (
           <div key={w} className="text-center">{w}</div>
         ))}
@@ -119,9 +119,9 @@ export default function DateTimePicker({ value, onChange, min }: DateTimePickerP
               onClick={() => pickDay(d)}
               className={cn(
                 'h-7 rounded text-[11px] transition-colors',
-                disabled && 'text-zinc-700 cursor-not-allowed',
-                !disabled && !isSelected && inMonth && 'text-zinc-200 hover:bg-white/10',
-                !disabled && !isSelected && !inMonth && 'text-zinc-600 hover:bg-white/5',
+                disabled && 'text-faint cursor-not-allowed',
+                !disabled && !isSelected && inMonth && 'text-secondaryText hover:bg-surface-medium',
+                !disabled && !isSelected && !inMonth && 'text-faint hover:bg-surface-soft',
                 !isSelected && isToday && 'font-semibold text-brand-cyan',
                 isSelected && 'bg-brand-purple text-white font-semibold hover:bg-brand-purple/90',
               )}
@@ -132,17 +132,17 @@ export default function DateTimePicker({ value, onChange, min }: DateTimePickerP
         })}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-white/5 pt-3">
-        <span className="text-[11px] text-zinc-400">Time</span>
+      <div className="flex items-center gap-2 border-t border-border-strong pt-3">
+        <span className="text-[11px] text-muted">Time</span>
         <input
           type="number"
           min={0}
           max={23}
           value={value.getHours()}
           onChange={(e) => setHour(Number(e.target.value))}
-          className="w-14 rounded border border-white/10 bg-black/40 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+          className="w-14 rounded border border-border-strong bg-black/40 px-2 py-1 text-sm text-primaryText focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
         />
-        <span className="text-zinc-500">:</span>
+        <span className="text-muted">:</span>
         <input
           type="number"
           min={0}
@@ -150,9 +150,9 @@ export default function DateTimePicker({ value, onChange, min }: DateTimePickerP
           step={5}
           value={value.getMinutes().toString().padStart(2, '0')}
           onChange={(e) => setMinute(Number(e.target.value))}
-          className="w-14 rounded border border-white/10 bg-black/40 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+          className="w-14 rounded border border-border-strong bg-black/40 px-2 py-1 text-sm text-primaryText focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
         />
-        <span className="ml-auto text-[11px] text-zinc-500">
+        <span className="ml-auto text-[11px] text-muted">
           {value.toLocaleString(undefined, {
             weekday: 'short',
             month: 'short',

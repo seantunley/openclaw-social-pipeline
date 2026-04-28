@@ -119,8 +119,8 @@ export default function RunDetail() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 rounded bg-white/5 animate-skeleton-pulse" />
-        <div className="h-64 rounded-xl bg-white/5 animate-skeleton-pulse" />
+        <div className="h-8 w-48 rounded bg-surface-soft animate-skeleton-pulse" />
+        <div className="h-64 rounded-xl bg-surface-soft animate-skeleton-pulse" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export default function RunDetail() {
   if (!run) {
     return (
       <div className="text-center py-20">
-        <p className="text-zinc-500">Run not found</p>
+        <p className="text-muted">Run not found</p>
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function RunDetail() {
       case 'Brief':
         return (
           <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-white/5 rounded-lg p-4 border border-white/10">
+            <pre className="whitespace-pre-wrap text-sm text-secondaryText bg-surface-soft rounded-lg p-4 border border-border-strong">
               {typeof run.brief === 'string'
                 ? run.brief
                 : JSON.stringify(run.brief, null, 2) || 'No brief generated yet'}
@@ -170,7 +170,7 @@ export default function RunDetail() {
       case 'Research':
         return (
           <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-white/5 rounded-lg p-4 border border-white/10">
+            <pre className="whitespace-pre-wrap text-sm text-secondaryText bg-surface-soft rounded-lg p-4 border border-border-strong">
               {typeof run.research === 'string'
                 ? run.research
                 : JSON.stringify(run.research, null, 2) || 'No research data yet'}
@@ -223,7 +223,7 @@ export default function RunDetail() {
                   handleAction('regenerateDraft', () => regenerateDraft(id!))
                 }
                 disabled={actionLoading === 'regenerateDraft'}
-                className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-surface-soft border border-border-strong px-3 py-2 text-sm text-secondaryText hover:bg-surface-medium transition-colors disabled:opacity-50"
               >
                 <RefreshCw
                   className={cn(
@@ -247,7 +247,7 @@ export default function RunDetail() {
               ))}
             </div>
             {drafts.length === 0 && (
-              <p className="text-sm text-zinc-500 py-8 text-center">No drafts generated yet</p>
+              <p className="text-sm text-muted py-8 text-center">No drafts generated yet</p>
             )}
           </div>
         );
@@ -282,25 +282,25 @@ export default function RunDetail() {
         return (
           <div className="space-y-4">
             {run.compliance || run.complianceCheck ? (
-              <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+              <div className="rounded-lg bg-surface-soft border border-border-strong p-4">
                 <div className="flex items-center gap-2 mb-3">
                   {(run.compliance?.passed ?? run.complianceCheck?.passed) ? (
                     <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                   ) : (
                     <XCircle className="h-5 w-5 text-red-400" />
                   )}
-                  <span className="text-sm font-medium text-zinc-200">
+                  <span className="text-sm font-medium text-secondaryText">
                     {(run.compliance?.passed ?? run.complianceCheck?.passed)
                       ? 'Compliance Passed'
                       : 'Compliance Issues Found'}
                   </span>
                 </div>
-                <pre className="whitespace-pre-wrap text-sm text-zinc-300">
+                <pre className="whitespace-pre-wrap text-sm text-secondaryText">
                   {JSON.stringify(run.compliance || run.complianceCheck, null, 2)}
                 </pre>
               </div>
             ) : (
-              <p className="text-sm text-zinc-500 py-8 text-center">
+              <p className="text-sm text-muted py-8 text-center">
                 No compliance data yet
               </p>
             )}
@@ -331,11 +331,11 @@ export default function RunDetail() {
       case 'Approval':
         return (
           <div className="space-y-4">
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+            <div className="rounded-lg bg-surface-soft border border-border-strong p-4">
               <p className="text-sm text-muted mb-2">Approval Status</p>
               <StatusBadge status={run.approvalStatus || run.status} />
               {run.approvalNotes && (
-                <p className="mt-3 text-sm text-zinc-300">{run.approvalNotes}</p>
+                <p className="mt-3 text-sm text-secondaryText">{run.approvalNotes}</p>
               )}
               {run.rejectionReason && (
                 <p className="mt-3 text-sm text-red-400">
@@ -413,16 +413,16 @@ export default function RunDetail() {
               <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-zinc-200 font-medium">
+                  <p className="text-secondaryText font-medium">
                     Scheduled to publish {new Date(run.scheduledAt).toLocaleString()}
                   </p>
-                  <p className="text-[11px] text-zinc-500">
+                  <p className="text-[11px] text-muted">
                     Approved · {new Date(run.scheduledAt).toLocaleString(undefined, { weekday: 'long' })}
                   </p>
                 </div>
                 <button
                   onClick={() => setScheduleOpen(true)}
-                  className="text-xs text-zinc-300 underline hover:text-white"
+                  className="text-xs text-secondaryText underline hover:text-white"
                 >
                   Change time
                 </button>
@@ -470,8 +470,8 @@ export default function RunDetail() {
       case 'Postiz State':
         return (
           <div className="space-y-4">
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
-              <pre className="whitespace-pre-wrap text-sm text-zinc-300">
+            <div className="rounded-lg bg-surface-soft border border-border-strong p-4">
+              <pre className="whitespace-pre-wrap text-sm text-secondaryText">
                 {JSON.stringify(run.postiz || run.postizState || {}, null, 2)}
               </pre>
             </div>
@@ -492,13 +492,13 @@ export default function RunDetail() {
 
       case 'Analytics':
         return (
-          <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+          <div className="rounded-lg bg-surface-soft border border-border-strong p-4">
             {run.analytics ? (
-              <pre className="whitespace-pre-wrap text-sm text-zinc-300">
+              <pre className="whitespace-pre-wrap text-sm text-secondaryText">
                 {JSON.stringify(run.analytics, null, 2)}
               </pre>
             ) : (
-              <p className="text-sm text-zinc-500 py-8 text-center">
+              <p className="text-sm text-muted py-8 text-center">
                 No analytics data available yet
               </p>
             )}
@@ -514,7 +514,7 @@ export default function RunDetail() {
     <div className="space-y-6">
       <button
         onClick={() => navigate('/runs')}
-        className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+        className="flex items-center gap-2 text-sm text-muted hover:text-secondaryText transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Runs
@@ -523,7 +523,7 @@ export default function RunDetail() {
       <div className="flex flex-wrap items-center gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-zinc-100">
+            <h1 className="text-2xl font-bold text-primaryText">
               Run {(id || '').slice(0, 8)}
             </h1>
             <StatusBadge status={run.status} />
@@ -558,11 +558,11 @@ export default function RunDetail() {
             {run.platform && <span className="capitalize">{run.platform}</span>}
             {run.campaign && (
               <>
-                <span className="text-zinc-600">/</span>
+                <span className="text-faint">/</span>
                 <span>{run.campaign}</span>
               </>
             )}
-            <span className="text-zinc-600">/</span>
+            <span className="text-faint">/</span>
             <span>{formatDate(run.createdAt)}</span>
           </div>
         </div>
@@ -570,8 +570,8 @@ export default function RunDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
-            <h3 className="text-sm font-semibold text-zinc-100 mb-4">Pipeline Progress</h3>
+          <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
+            <h3 className="text-sm font-semibold text-primaryText mb-4">Pipeline Progress</h3>
             <PipelineTimeline
               currentStage={run.currentStage}
               stageStatuses={stageStatuses}
@@ -585,7 +585,7 @@ export default function RunDetail() {
         </div>
 
         <div className="lg:col-span-3 space-y-4">
-          <div className="flex gap-1 border-b border-white/10 overflow-x-auto">
+          <div className="flex gap-1 border-b border-border-strong overflow-x-auto">
             {visibleTabs.map((tab) => (
               <button
                 key={tab}
@@ -597,7 +597,7 @@ export default function RunDetail() {
                   'relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
                   activeTab === tab
                     ? 'text-indigo-400'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    : 'text-muted hover:text-secondaryText'
                 )}
               >
                 {tab}
@@ -608,7 +608,7 @@ export default function RunDetail() {
             ))}
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6">
+          <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-6">
             {renderTabContent()}
           </div>
         </div>
@@ -647,12 +647,12 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+      <div className="rounded-lg border border-border-strong bg-surface-soft p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setShowPrompt((v) => !v)}
-            className="text-xs text-zinc-400 hover:text-zinc-200"
+            className="text-xs text-muted hover:text-secondaryText"
           >
             {showPrompt ? '▾' : '▸'} Generation prompt {dirty && <span className="text-amber-400 ml-1">(edited)</span>}
           </button>
@@ -661,7 +661,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
               <button
                 type="button"
                 onClick={() => setPrompt(seed)}
-                className="text-xs text-zinc-500 hover:text-zinc-300"
+                className="text-xs text-muted hover:text-secondaryText"
               >
                 Reset
               </button>
@@ -686,10 +686,10 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
                 : 'Edit the editorial prompt and click Regenerate.'
             }
             rows={6}
-            className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
+            className="w-full rounded-md border border-border-strong bg-black/40 px-3 py-2 text-xs text-secondaryText placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-brand-purple/40"
           />
         )}
-        <p className="text-[11px] text-zinc-500">
+        <p className="text-[11px] text-muted">
           {assets.length} asset(s). Editing the prompt and regenerating produces a new image; previous ones become superseded but stay in the database.
         </p>
       </div>
@@ -705,7 +705,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
         ))}
       </div>
       {assets.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+        <div className="flex flex-col items-center justify-center py-12 text-muted">
           <ImageIcon className="h-10 w-10 mb-3" />
           <p className="text-sm">No media generated yet</p>
         </div>
@@ -740,7 +740,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
 
   if (!primary) {
     return (
-      <p className="text-sm text-zinc-500 py-12 text-center">
+      <p className="text-sm text-muted py-12 text-center">
         No draft yet — wait for the pipeline to finish or generate one.
       </p>
     );
@@ -801,14 +801,14 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-wider text-zinc-500">
+        <p className="text-xs uppercase tracking-wider text-muted">
           How the post will appear on {run.platform || 'the platform'}
         </p>
         <div className="flex items-center gap-2">
           {!editing && (
             <button
               onClick={startEdit}
-              className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-surface-soft border border-border-strong px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-medium transition-colors"
             >
               <Pencil className="h-3.5 w-3.5" /> Edit
             </button>
@@ -875,14 +875,14 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
             rows={Math.min(20, Math.max(8, draftText.split('\n').length + 2))}
-            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-sm text-primaryText font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional: tell the bot WHY you changed this (becomes a stronger rule)"
-            className="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-xs text-secondaryText placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <div className="flex items-center justify-between gap-2">
             {(() => {
@@ -890,7 +890,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
               const hasNote = note.trim().length > 0;
               const canSave = textChanged || hasNote;
               return (
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-muted">
                   {!canSave && 'Edit the text or add a note to enable Save.'}
                   {canSave && textChanged && hasNote && 'Will save text changes + note as rules.'}
                   {canSave && textChanged && !hasNote && 'Will diff the edit and extract rules from it.'}
@@ -901,7 +901,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
             <div className="flex gap-2">
               <button
                 onClick={cancelEdit}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                className="rounded-lg border border-border-strong px-3 py-1.5 text-xs text-muted hover:text-secondaryText hover:bg-surface-soft"
               >
                 Cancel
               </button>
@@ -1014,7 +1014,7 @@ function ReadabilityTab({
 
   if (!original) {
     return (
-      <p className="text-sm text-zinc-500 py-8 text-center">
+      <p className="text-sm text-muted py-8 text-center">
         No content yet — readability needs a finalised draft.
       </p>
     );
@@ -1025,27 +1025,27 @@ function ReadabilityTab({
       {/* Metric toggle + target band header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-sm font-semibold text-zinc-100">Readability</p>
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-sm font-semibold text-primaryText">Readability</p>
+          <p className="text-[11px] text-muted">
             Scoring system:{' '}
-            <span className="text-zinc-300">
+            <span className="text-secondaryText">
               {metric === 'flesch'
                 ? 'Flesch Reading Ease (0-100, higher = easier)'
                 : 'Flesch–Kincaid Grade Level (US school grade)'}
             </span>
-            <span className="mx-2 text-zinc-700">·</span>
+            <span className="mx-2 text-faint">·</span>
             Target:{' '}
             <span className="text-emerald-400">
               {metric === 'flesch' ? '60+ (plain)' : 'grade 8 or below'}
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-md border border-white/10 bg-white/5 p-0.5 text-[11px]">
+        <div className="flex items-center gap-1 rounded-md border border-border-strong bg-surface-soft p-0.5 text-[11px]">
           <button
             onClick={() => setMetric('flesch')}
             className={cn(
               'px-2 py-1 rounded',
-              metric === 'flesch' ? 'bg-white/10 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
+              metric === 'flesch' ? 'bg-surface-medium text-primaryText' : 'text-muted hover:text-secondaryText',
             )}
           >
             Flesch
@@ -1054,7 +1054,7 @@ function ReadabilityTab({
             onClick={() => setMetric('grade')}
             className={cn(
               'px-2 py-1 rounded',
-              metric === 'grade' ? 'bg-white/10 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
+              metric === 'grade' ? 'bg-surface-medium text-primaryText' : 'text-muted hover:text-secondaryText',
             )}
           >
             Grade level
@@ -1068,10 +1068,10 @@ function ReadabilityTab({
 
       {/* Improve action */}
       {improved == null ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="rounded-xl border border-border-strong bg-surface-soft p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-sm text-zinc-200 font-medium">Improve readability</p>
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-sm text-secondaryText font-medium">Improve readability</p>
+            <p className="text-[11px] text-muted">
               One LLM pass. Shorter sentences, simpler words. Facts and citations preserved exactly.
             </p>
           </div>
@@ -1121,11 +1121,11 @@ function ReadabilityTab({
 
           {/* Change log */}
           {changes.length > 0 && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-semibold text-zinc-200 mb-2">Edits applied</p>
+            <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
+              <p className="text-xs font-semibold text-secondaryText mb-2">Edits applied</p>
               <ul className="space-y-1">
                 {changes.map((c, i) => (
-                  <li key={i} className="text-[11px] text-zinc-400 flex gap-2">
+                  <li key={i} className="text-[11px] text-muted flex gap-2">
                     <span className="text-brand-cyan">·</span>
                     <span>{c}</span>
                   </li>
@@ -1137,8 +1137,8 @@ function ReadabilityTab({
           {/* Push harder + discard row */}
           <div className="flex items-center justify-between flex-wrap gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-zinc-200 font-medium">Still too hard?</p>
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-sm text-secondaryText font-medium">Still too hard?</p>
+              <p className="text-[11px] text-muted">
                 Push harder applies aggressive caps: 14-word sentence max, replace 3+ syllable words, no subordinate clauses. Iterates from the current improved version.
               </p>
             </div>
@@ -1148,7 +1148,7 @@ function ReadabilityTab({
                   setImproved(null);
                   setChanges([]);
                 }}
-                className="text-[11px] text-zinc-500 hover:text-zinc-300"
+                className="text-[11px] text-muted hover:text-secondaryText"
               >
                 Discard
               </button>
@@ -1227,14 +1227,14 @@ function ReadabilityCard({
   const color = { good: 'text-emerald-400', warn: 'text-amber-400', bad: 'text-red-400' }[view.tone];
   const bar = { good: 'bg-emerald-500/60', warn: 'bg-amber-500/60', bad: 'bg-red-500/60' }[view.tone];
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">{label}</p>
+    <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
+      <p className="text-[10px] uppercase tracking-wider text-muted font-medium">{label}</p>
       <div className="mt-2 flex items-baseline gap-3">
         <span className={cn('text-3xl font-semibold tabular-nums', color)}>{view.primary}</span>
-        <span className="text-sm text-zinc-300 capitalize">{view.label}</span>
-        {view.sub && <span className="text-xs text-zinc-500">· {view.sub}</span>}
+        <span className="text-sm text-secondaryText capitalize">{view.label}</span>
+        {view.sub && <span className="text-xs text-muted">· {view.sub}</span>}
       </div>
-      <div className="mt-2 h-1 w-full rounded-full bg-white/5 overflow-hidden">
+      <div className="mt-2 h-1 w-full rounded-full bg-surface-soft overflow-hidden">
         <div className={cn('h-full transition-all', bar)} style={{ width: `${view.barPct}%` }} />
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
@@ -1248,9 +1248,9 @@ function ReadabilityCard({
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-md bg-black/30 border border-white/5 px-2 py-1.5">
-      <p className="text-zinc-500">{label}</p>
-      <p className="text-zinc-200 font-medium tabular-nums">{value}</p>
+    <div className="rounded-md bg-black/30 border border-border-strong px-2 py-1.5">
+      <p className="text-muted">{label}</p>
+      <p className="text-secondaryText font-medium tabular-nums">{value}</p>
     </div>
   );
 }
@@ -1281,18 +1281,18 @@ function ReadabilityExplanation({
   else reasons.push('Reads as academic or jargon-heavy. Most social audiences will bounce. Consider rewriting.');
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
-      <p className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+    <div className="rounded-xl border border-border-strong bg-surface-soft p-4 space-y-2">
+      <p className="text-xs font-semibold text-secondaryText flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-brand-cyan" />
         Why this score?
       </p>
-      <p className="text-[11px] text-zinc-500">
-        Flesch Reading Ease: <code className="text-zinc-300">206.835 − 1.015×(words/sentence) − 84.6×(syllables/word)</code>. Higher is easier.
+      <p className="text-[11px] text-muted">
+        Flesch Reading Ease: <code className="text-secondaryText">206.835 − 1.015×(words/sentence) − 84.6×(syllables/word)</code>. Higher is easier.
       </p>
       <ul className="space-y-1 mt-2">
         {reasons.map((r, i) => (
-          <li key={i} className="text-[12px] text-zinc-300 flex gap-2">
-            <span className="text-zinc-500">·</span>
+          <li key={i} className="text-[12px] text-secondaryText flex gap-2">
+            <span className="text-muted">·</span>
             <span>{r}</span>
           </li>
         ))}
@@ -1327,12 +1327,12 @@ function VersionCard({
       ? 'border-emerald-500/40'
       : tone === 'worse'
         ? 'border-amber-500/40'
-        : 'border-white/10';
+        : 'border-border-strong';
   const view = score ? getMetricView(score, metric) : null;
   return (
-    <div className={cn('rounded-xl border bg-white/5 p-4 space-y-3', borderColor)}>
+    <div className={cn('rounded-xl border bg-surface-soft p-4 space-y-3', borderColor)}>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-zinc-200">{label}</p>
+        <p className="text-xs font-semibold text-secondaryText">{label}</p>
         {view && (
           <div className="flex items-center gap-2">
             <span
@@ -1347,7 +1347,7 @@ function VersionCard({
             >
               {view.primary}
             </span>
-            <span className="text-[11px] text-zinc-500 capitalize">{view.label}</span>
+            <span className="text-[11px] text-muted capitalize">{view.label}</span>
             {typeof delta === 'number' && Math.abs(delta) >= 0.5 && (
               <span
                 className={cn(
@@ -1360,13 +1360,13 @@ function VersionCard({
               >
                 {delta > 0 ? '+' : ''}
                 {delta.toFixed(1)}
-                <span className="text-zinc-600 ml-0.5">Flesch</span>
+                <span className="text-faint ml-0.5">Flesch</span>
               </span>
             )}
           </div>
         )}
       </div>
-      <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 bg-black/30 rounded p-3 border border-white/5 max-h-72 overflow-y-auto">
+      <pre className="whitespace-pre-wrap text-[12px] text-secondaryText bg-black/30 rounded p-3 border border-border-strong max-h-72 overflow-y-auto">
         {content}
       </pre>
       <button
@@ -1376,7 +1376,7 @@ function VersionCard({
           'w-full flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50',
           tone === 'better'
             ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white'
-            : 'border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10',
+            : 'border border-border-strong bg-surface-soft text-secondaryText hover:bg-surface-medium',
         )}
       >
         {busy ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -1411,7 +1411,7 @@ function SeoGeoTab({ run }: { run: any }) {
 
   if (!generate && !primary) {
     return (
-      <p className="text-sm text-zinc-500 py-8 text-center">SEO/GEO stage hasn't run yet</p>
+      <p className="text-sm text-muted py-8 text-center">SEO/GEO stage hasn't run yet</p>
     );
   }
 
@@ -1435,19 +1435,19 @@ function SeoGeoTab({ run }: { run: any }) {
           <p className="text-[10px] uppercase tracking-wider text-brand-cyan font-medium mb-2">
             AI Citation Readiness
           </p>
-          <p className="text-sm text-zinc-200">{aiCitation}</p>
+          <p className="text-sm text-secondaryText">{aiCitation}</p>
         </div>
       )}
 
       {/* Sub-scores */}
       {Object.keys(seoDetails).length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <h4 className="text-sm font-semibold text-zinc-100 mb-3">Sub-scores</h4>
+        <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
+          <h4 className="text-sm font-semibold text-primaryText mb-3">Sub-scores</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
             {Object.entries(seoDetails).map(([k, v]) => (
               <div key={k} className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400 capitalize">{k.replace(/_/g, ' ')}</span>
-                <span className="text-zinc-200 tabular-nums font-medium">
+                <span className="text-muted capitalize">{k.replace(/_/g, ' ')}</span>
+                <span className="text-secondaryText tabular-nums font-medium">
                   {typeof v === 'number' ? `${v}/10` : String(v)}
                 </span>
               </div>
@@ -1458,11 +1458,11 @@ function SeoGeoTab({ run }: { run: any }) {
 
       {/* EEAT signals */}
       {eeat.length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <h4 className="text-sm font-semibold text-zinc-100 mb-3">E-E-A-T signals surfaced</h4>
+        <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
+          <h4 className="text-sm font-semibold text-primaryText mb-3">E-E-A-T signals surfaced</h4>
           <ul className="space-y-1.5">
             {eeat.map((s, i) => (
-              <li key={i} className="text-xs text-zinc-300 flex gap-2">
+              <li key={i} className="text-xs text-secondaryText flex gap-2">
                 <span className="text-emerald-400">✓</span>
                 <span>{s}</span>
               </li>
@@ -1473,12 +1473,12 @@ function SeoGeoTab({ run }: { run: any }) {
 
       {/* Original SEO/GEO drafted content (pre-psychology / pre-humanize) */}
       {draftedContent && (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <h4 className="text-sm font-semibold text-zinc-100 mb-2">SEO/GEO draft (pre-psychology)</h4>
-          <p className="text-[10px] text-zinc-500 mb-3">
+        <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
+          <h4 className="text-sm font-semibold text-primaryText mb-2">SEO/GEO draft (pre-psychology)</h4>
+          <p className="text-[10px] text-muted mb-3">
             What the SEO/GEO stage produced before psychology and humanizer made their passes.
           </p>
-          <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-black/30 rounded p-3 border border-white/5">
+          <pre className="whitespace-pre-wrap text-sm text-secondaryText bg-black/30 rounded p-3 border border-border-strong">
             {draftedContent}
           </pre>
         </div>
@@ -1503,7 +1503,7 @@ function BigScore({
     good: 'text-emerald-400',
     warn: 'text-amber-400',
     bad: 'text-red-400',
-    muted: 'text-zinc-500',
+    muted: 'text-muted',
   }[tone];
   return (
     <div
@@ -1511,16 +1511,16 @@ function BigScore({
         'rounded-xl border p-4',
         highlight
           ? 'border-brand-purple/40 bg-gradient-to-br from-brand-purple/10 to-brand-pink/10'
-          : 'border-white/10 bg-white/5',
+          : 'border-border-strong bg-surface-soft',
       )}
     >
-      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+      <p className="text-[10px] uppercase tracking-wider text-muted font-medium">
         {label}
       </p>
       <p className={cn('mt-2 text-3xl font-semibold tabular-nums', color)}>
         {value == null ? '—' : Math.round(value)}
       </p>
-      <p className="mt-1 text-[10px] text-zinc-500">{hint}</p>
+      <p className="mt-1 text-[10px] text-muted">{hint}</p>
     </div>
   );
 }
@@ -1563,8 +1563,8 @@ function AnalysisBlock({ run }: { run: any }) {
   const readability = content ? fleschReadingEase(content) : null;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
-      <h3 className="text-sm font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+    <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
+      <h3 className="text-sm font-semibold text-primaryText mb-4 flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-brand-cyan" />
         Analysis
       </h3>
@@ -1614,7 +1614,7 @@ function AnalysisBlock({ run }: { run: any }) {
         />
       </div>
       {compliance && !compliance.passed && Array.isArray(compliance.issues) && compliance.issues.length > 0 && (
-        <ul className="mt-4 space-y-1.5 border-t border-white/10 pt-3">
+        <ul className="mt-4 space-y-1.5 border-t border-border-strong pt-3">
           {compliance.issues.slice(0, 5).map((issue: string, i: number) => (
             <li key={i} className="text-[11px] text-amber-300/90 flex items-start gap-1.5">
               <XCircle className="h-3 w-3 shrink-0 mt-0.5" />
@@ -1646,7 +1646,7 @@ function ScoreRow({
     good: 'text-emerald-400',
     warn: 'text-amber-400',
     bad: 'text-red-400',
-    muted: 'text-zinc-500',
+    muted: 'text-muted',
   }[tone];
   const barColor = {
     good: 'bg-emerald-500/60',
@@ -1657,18 +1657,18 @@ function ScoreRow({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-2 text-zinc-300">
+        <span className="flex items-center gap-2 text-secondaryText">
           <span className={toneColor}>{icon}</span>
           {label}
         </span>
         <span className={cn('font-medium tabular-nums', toneColor)}>{value}</span>
       </div>
       {bar != null && (
-        <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+        <div className="h-1 w-full rounded-full bg-surface-soft overflow-hidden">
           <div className={cn('h-full transition-all', barColor)} style={{ width: `${bar}%` }} />
         </div>
       )}
-      {hint && <p className="text-[11px] text-zinc-500 leading-tight">{hint}</p>}
+      {hint && <p className="text-[11px] text-muted leading-tight">{hint}</p>}
     </div>
   );
 }
@@ -1731,15 +1731,15 @@ function ActivityBlock({ stages }: { stages: any[] }) {
     });
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
-      <h3 className="text-sm font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+    <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
+      <h3 className="text-sm font-semibold text-primaryText mb-4 flex items-center gap-2">
         <Activity className="h-4 w-4 text-brand-cyan" />
         Activity
       </h3>
       {events.length === 0 ? (
-        <p className="text-xs text-zinc-500">No activity yet.</p>
+        <p className="text-xs text-muted">No activity yet.</p>
       ) : (
-        <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-white/10">
+        <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-surface-medium">
           {events.map((e, i) => (
             <li key={i} className="relative pl-6">
               <span
@@ -1753,8 +1753,8 @@ function ActivityBlock({ stages }: { stages: any[] }) {
                 )}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-zinc-200 capitalize leading-tight">{e.name}</span>
-                <span className="text-[11px] text-zinc-500 tabular-nums leading-tight">
+                <span className="text-xs font-medium text-secondaryText capitalize leading-tight">{e.name}</span>
+                <span className="text-[11px] text-muted tabular-nums leading-tight">
                   {e.startedAt && e.completedAt
                     ? formatDuration(e.startedAt, e.completedAt)
                     : e.status}

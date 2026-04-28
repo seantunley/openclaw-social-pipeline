@@ -20,7 +20,7 @@ export default function DraftCard({ draft, selected, onSelect }: DraftCardProps)
         'relative rounded-xl border p-5 cursor-pointer transition-all duration-200',
         selected
           ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/50'
-          : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.07]'
+          : 'border-border-strong bg-surface-soft hover:border-white/20 hover:bg-white/[0.07]'
       )}
     >
       {selected && (
@@ -33,7 +33,7 @@ export default function DraftCard({ draft, selected, onSelect }: DraftCardProps)
           {draft.variant}
         </p>
       )}
-      <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+      <p className="text-sm text-secondaryText leading-relaxed whitespace-pre-wrap">
         {draft.content}
       </p>
       {draft.score !== undefined && (

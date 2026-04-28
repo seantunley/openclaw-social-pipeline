@@ -24,7 +24,7 @@ export default function MediaCard({ asset, selected, onSelect, onRegenerate }: M
         'group relative rounded-xl border overflow-hidden transition-all duration-200 cursor-pointer',
         selected
           ? 'border-indigo-500 ring-1 ring-indigo-500/50'
-          : 'border-white/10 hover:border-white/20'
+          : 'border-border-strong hover:border-white/20'
       )}
       onClick={() => onSelect?.(asset.id)}
     >
@@ -37,11 +37,11 @@ export default function MediaCard({ asset, selected, onSelect, onRegenerate }: M
           />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <TypeIcon className="h-10 w-10 text-zinc-600" />
+            <TypeIcon className="h-10 w-10 text-faint" />
           </div>
         )}
         <div className="absolute top-2 left-2">
-          <span className="inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-zinc-300 backdrop-blur-sm">
+          <span className="inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-secondaryText backdrop-blur-sm">
             <TypeIcon className="h-3 w-3" />
             {asset.type}
           </span>
@@ -57,7 +57,7 @@ export default function MediaCard({ asset, selected, onSelect, onRegenerate }: M
               e.stopPropagation();
               onRegenerate(asset.id);
             }}
-            className="absolute bottom-2 right-2 rounded-lg bg-black/60 p-2 text-zinc-400 hover:text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute bottom-2 right-2 rounded-lg bg-black/60 p-2 text-muted hover:text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
@@ -70,7 +70,7 @@ export default function MediaCard({ asset, selected, onSelect, onRegenerate }: M
       )}
       {asset.aspectRatio && (
         <div className="px-3 pb-3 bg-card">
-          <span className="text-xs text-zinc-500">{asset.aspectRatio}</span>
+          <span className="text-xs text-muted">{asset.aspectRatio}</span>
         </div>
       )}
     </div>

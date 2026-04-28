@@ -37,7 +37,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   scheduled: { bg: 'bg-blue-500/20', text: 'text-blue-400' },
   published: { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
   failed: { bg: 'bg-red-500/20', text: 'text-red-400' },
-  cancelled: { bg: 'bg-white/5', text: 'text-white/30' },
+  cancelled: { bg: 'bg-surface-soft', text: 'text-white/30' },
   awaiting_approval: { bg: 'bg-amber-500/20', text: 'text-amber-400' },
   approved: { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
 };
@@ -82,13 +82,13 @@ function CalendarItem({ item, compact }: { item: any; compact?: boolean }) {
             {item.status}
           </span>
           {item.platform && (
-            <span className="text-[10px] text-zinc-500 capitalize">{item.platform}</span>
+            <span className="text-[10px] text-muted capitalize">{item.platform}</span>
           )}
-          <span className="text-[10px] text-zinc-600 ml-auto">
+          <span className="text-[10px] text-faint ml-auto">
             {dayjs(scheduledAt).format('HH:mm')}
           </span>
         </div>
-        <p className="text-xs font-medium text-zinc-200 truncate">
+        <p className="text-xs font-medium text-secondaryText truncate">
           {item.brief?.topic || item.brief?.title || `Run ${item.id?.slice(0, 8)}`}
         </p>
       </div>
@@ -146,7 +146,7 @@ function DayCell({
       <p
         className={cn(
           'text-xs mb-1 px-0.5',
-          isToday ? 'text-indigo-400 font-bold' : isCurrentMonth ? 'text-zinc-500' : 'text-zinc-700'
+          isToday ? 'text-indigo-400 font-bold' : isCurrentMonth ? 'text-muted' : 'text-faint'
         )}
       >
         {date.format('D')}
@@ -192,7 +192,7 @@ function WeekView({
               day.isSame(dayjs(), 'day') && 'bg-indigo-500/5'
             )}
           >
-            <p className="text-[10px] text-zinc-500">{day.format('ddd')}</p>
+            <p className="text-[10px] text-muted">{day.format('ddd')}</p>
             <p className={cn('text-xs sm:text-sm font-semibold', day.isSame(dayjs(), 'day') && 'text-indigo-400')}>
               {day.format('D')}
             </p>
@@ -202,7 +202,7 @@ function WeekView({
         {/* Hour rows */}
         {hours.map((hour) => (
           <div key={hour} className="contents">
-            <div className="border-r border-zinc-800 p-1 text-[10px] text-zinc-600 text-right pr-1.5 pt-1">
+            <div className="border-r border-zinc-800 p-1 text-[10px] text-faint text-right pr-1.5 pt-1">
               {String(hour).padStart(2, '0')}:00
             </div>
             {days.map((day) => {
@@ -280,7 +280,7 @@ function ListView({ items }: { items: any[] }) {
     <div className="space-y-4">
       {sortedDays.map((day) => (
         <div key={day}>
-          <h3 className="text-xs font-semibold text-zinc-500 mb-2">
+          <h3 className="text-xs font-semibold text-muted mb-2">
             {dayjs(day).format('dddd, MMMM D, YYYY')}
           </h3>
           <div className="space-y-2">
@@ -292,8 +292,8 @@ function ListView({ items }: { items: any[] }) {
       ))}
       {sortedDays.length === 0 && (
         <div className="rounded-xl border border-dashed border-zinc-800 p-10 text-center">
-          <CalendarIcon className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-          <p className="text-sm text-zinc-500">No scheduled content in this period</p>
+          <CalendarIcon className="h-8 w-8 text-faint mx-auto mb-2" />
+          <p className="text-sm text-muted">No scheduled content in this period</p>
         </div>
       )}
     </div>
@@ -362,23 +362,23 @@ export default function SchedulePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText">
               Publishing Schedule
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted mt-1">
               Drag and drop to reschedule posts
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             {/* View switcher */}
-            <div className="flex items-center gap-1 bg-white/[0.03] rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-surface-faint rounded-lg p-1">
               {(['month', 'week', 'list'] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
                   className={cn(
                     'px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors',
-                    view === v ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                    view === v ? 'bg-surface-medium text-white' : 'text-muted hover:text-secondaryText'
                   )}
                 >
                   {v}
@@ -390,24 +390,24 @@ export default function SchedulePage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 rounded-lg hover:bg-white/[0.05] text-zinc-500 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-white/[0.05] text-muted hover:text-white transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCurrentDate(dayjs())}
-                className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 text-muted hover:text-white hover:border-zinc-600 transition-colors"
               >
                 Today
               </button>
-              <span className="text-xs sm:text-sm font-semibold min-w-[120px] sm:min-w-[160px] text-center text-zinc-200">
+              <span className="text-xs sm:text-sm font-semibold min-w-[120px] sm:min-w-[160px] text-center text-secondaryText">
                 {view === 'week'
                   ? `${currentDate.startOf('isoWeek').format('MMM D')} – ${currentDate.endOf('isoWeek').format('MMM D, YYYY')}`
                   : currentDate.format('MMMM YYYY')}
               </span>
               <button
                 onClick={() => navigate(1)}
-                className="p-2 rounded-lg hover:bg-white/[0.05] text-zinc-500 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-white/[0.05] text-muted hover:text-white transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -417,7 +417,7 @@ export default function SchedulePage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-faint" />
           </div>
         ) : (
           <>
@@ -429,7 +429,7 @@ export default function SchedulePage() {
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
                       <div
                         key={d}
-                        className="p-1.5 sm:p-2 text-center text-[10px] text-zinc-500 font-medium uppercase tracking-wider"
+                        className="p-1.5 sm:p-2 text-center text-[10px] text-muted font-medium uppercase tracking-wider"
                       >
                         {d}
                       </div>

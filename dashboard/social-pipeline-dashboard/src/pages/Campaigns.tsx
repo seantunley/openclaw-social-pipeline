@@ -59,7 +59,7 @@ export default function Campaigns() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Campaigns</h1>
+          <h1 className="text-2xl font-bold text-primaryText">Campaigns</h1>
           <p className="mt-1 text-sm text-muted">Manage your content campaigns</p>
         </div>
         <button
@@ -76,7 +76,7 @@ export default function Campaigns() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-48 rounded-xl bg-white/5 border border-white/10 animate-skeleton-pulse"
+              className="h-48 rounded-xl bg-surface-soft border border-border-strong animate-skeleton-pulse"
             />
           ))}
         </div>
@@ -86,7 +86,7 @@ export default function Campaigns() {
             <div
               key={campaign.id || campaign._id}
               onClick={() => setSelectedCampaign(campaign)}
-              className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.07] transition-all"
+              className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.07] transition-all"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -94,14 +94,14 @@ export default function Campaigns() {
                     <Megaphone className="h-5 w-5 text-indigo-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-zinc-100">{campaign.name}</h3>
+                    <h3 className="font-semibold text-primaryText">{campaign.name}</h3>
                     <StatusBadge status={campaign.status || 'active'} />
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-zinc-600" />
+                <ChevronRight className="h-4 w-4 text-faint" />
               </div>
               {campaign.description && (
-                <p className="mt-3 text-sm text-zinc-400 line-clamp-2">
+                <p className="mt-3 text-sm text-muted line-clamp-2">
                   {campaign.description}
                 </p>
               )}
@@ -110,7 +110,7 @@ export default function Campaigns() {
                   {(campaign.platforms || []).map((p: string) => (
                     <span
                       key={p}
-                      className="rounded-md bg-white/10 px-2 py-0.5 text-xs text-zinc-300 capitalize"
+                      className="rounded-md bg-surface-medium px-2 py-0.5 text-xs text-secondaryText capitalize"
                     >
                       {p}
                     </span>
@@ -125,9 +125,9 @@ export default function Campaigns() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-          <Megaphone className="h-12 w-12 mb-4 text-zinc-600" />
-          <p className="text-lg font-medium text-zinc-400">No campaigns yet</p>
+        <div className="flex flex-col items-center justify-center py-20 text-muted">
+          <Megaphone className="h-12 w-12 mb-4 text-faint" />
+          <p className="text-lg font-medium text-muted">No campaigns yet</p>
           <p className="text-sm mt-1">Create your first campaign to get started</p>
         </div>
       )}
@@ -142,7 +142,7 @@ export default function Campaigns() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-secondaryText mb-1.5">
               Campaign Name
             </label>
             <input
@@ -150,11 +150,11 @@ export default function Campaigns() {
               value={formData.name}
               onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
               placeholder="e.g., Q1 Product Launch"
-              className="w-full rounded-lg bg-zinc-800 border border-white/10 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-2.5 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-secondaryText mb-1.5">
               Platforms
             </label>
             <div className="flex flex-wrap gap-2">
@@ -166,7 +166,7 @@ export default function Campaigns() {
                     'rounded-lg px-3 py-1.5 text-sm capitalize border transition-colors',
                     formData.platforms.includes(p)
                       ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                      : 'bg-white/5 border-white/10 text-zinc-400 hover:border-white/20'
+                      : 'bg-surface-soft border-border-strong text-muted hover:border-white/20'
                   )}
                 >
                   {p}
@@ -175,7 +175,7 @@ export default function Campaigns() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label className="block text-sm font-medium text-secondaryText mb-1.5">
               Description
             </label>
             <textarea
@@ -185,13 +185,13 @@ export default function Campaigns() {
               }
               placeholder="Brief description of the campaign..."
               rows={3}
-              className="w-full rounded-lg bg-zinc-800 border border-white/10 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-2.5 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={() => setShowCreate(false)}
-              className="rounded-lg px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+              className="rounded-lg px-4 py-2 text-sm text-muted hover:text-secondaryText"
             >
               Cancel
             </button>
@@ -220,7 +220,7 @@ export default function Campaigns() {
                 {(selectedCampaign.platforms || []).map((p: string) => (
                   <span
                     key={p}
-                    className="rounded-md bg-white/10 px-2 py-0.5 text-xs text-zinc-300 capitalize"
+                    className="rounded-md bg-surface-medium px-2 py-0.5 text-xs text-secondaryText capitalize"
                   >
                     {p}
                   </span>
@@ -228,10 +228,10 @@ export default function Campaigns() {
               </div>
             </div>
             {selectedCampaign.description && (
-              <p className="text-sm text-zinc-300">{selectedCampaign.description}</p>
+              <p className="text-sm text-secondaryText">{selectedCampaign.description}</p>
             )}
             <div>
-              <h4 className="text-sm font-medium text-zinc-300 mb-2">Recent Runs</h4>
+              <h4 className="text-sm font-medium text-secondaryText mb-2">Recent Runs</h4>
               {(selectedCampaign.runs || []).length > 0 ? (
                 <div className="space-y-2">
                   {selectedCampaign.runs.map((run: any) => (
@@ -241,11 +241,11 @@ export default function Campaigns() {
                         setSelectedCampaign(null);
                         navigate(`/runs/${run.id || run._id}`);
                       }}
-                      className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 px-4 py-3 cursor-pointer hover:bg-white/[0.07] transition-colors"
+                      className="flex items-center justify-between rounded-lg bg-surface-soft border border-border-strong px-4 py-3 cursor-pointer hover:bg-white/[0.07] transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <StatusBadge status={run.status} />
-                        <span className="text-sm text-zinc-300 capitalize">
+                        <span className="text-sm text-secondaryText capitalize">
                           {run.platform}
                         </span>
                       </div>
@@ -254,7 +254,7 @@ export default function Campaigns() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500">No runs for this campaign</p>
+                <p className="text-sm text-muted">No runs for this campaign</p>
               )}
             </div>
           </div>

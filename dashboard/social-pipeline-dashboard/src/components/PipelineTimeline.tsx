@@ -34,7 +34,7 @@ function stageIcon(status: string) {
     case 'waiting':
       return <Clock className="h-5 w-5 text-amber-400" />;
     default:
-      return <Circle className="h-5 w-5 text-zinc-600" />;
+      return <Circle className="h-5 w-5 text-faint" />;
   }
 }
 
@@ -70,7 +70,7 @@ export default function PipelineTimeline({
                 <p
                   className={cn(
                     'text-sm font-medium',
-                    isCurrent ? 'text-zinc-100' : status === 'completed' ? 'text-zinc-300' : 'text-zinc-500'
+                    isCurrent ? 'text-primaryText' : status === 'completed' ? 'text-secondaryText' : 'text-muted'
                   )}
                 >
                   {stage.label}

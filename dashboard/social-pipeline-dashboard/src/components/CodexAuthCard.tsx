@@ -109,27 +109,27 @@ export default function CodexAuthCard() {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-zinc-500 mt-0.5" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted mt-0.5" />
           ) : authed ? (
             <CheckCircle2 className="h-5 w-5 text-emerald-400 mt-0.5" />
           ) : expiredButPresent ? (
             <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5" />
           ) : (
-            <AlertTriangle className="h-5 w-5 text-zinc-500 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-muted mt-0.5" />
           )}
           <div>
-            <p className="text-sm font-medium text-zinc-200">
+            <p className="text-sm font-medium text-secondaryText">
               OpenAI Codex (Sign in with ChatGPT)
             </p>
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-muted">
               Authenticates the bot's `LLM_PROVIDER=openai-codex` mode against your ChatGPT
-              Plus / Pro / Business subscription. Tokens land in <code className="text-zinc-400">~/.codex/auth.json</code>{' '}
+              Plus / Pro / Business subscription. Tokens land in <code className="text-muted">~/.codex/auth.json</code>{' '}
               — the same file the official Codex CLI uses.
             </p>
             <p className="mt-2 text-xs">
               Status:{' '}
               {isLoading ? (
-                <span className="text-zinc-500">Checking…</span>
+                <span className="text-muted">Checking…</span>
               ) : authed ? (
                 <span className="text-emerald-300 font-medium">Signed in</span>
               ) : expiredButPresent ? (
@@ -137,10 +137,10 @@ export default function CodexAuthCard() {
                   Expired — sign in again to refresh
                 </span>
               ) : (
-                <span className="text-zinc-400 font-medium">Not signed in</span>
+                <span className="text-muted font-medium">Not signed in</span>
               )}
               {status?.expiresAt && (
-                <span className="text-zinc-500 ml-2">
+                <span className="text-muted ml-2">
                   (expires {new Date(status.expiresAt).toLocaleString()})
                 </span>
               )}
@@ -153,14 +153,14 @@ export default function CodexAuthCard() {
             <button
               onClick={signOut}
               disabled={busy}
-              className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-border-strong px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-medium disabled:opacity-50"
             >
               <LogOut className="h-3.5 w-3.5" /> Sign out
             </button>
           ) : flowId ? (
             <button
               onClick={cancelInProgress}
-              className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10"
+              className="flex items-center gap-2 rounded-lg border border-border-strong px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-medium"
             >
               Cancel
             </button>
@@ -196,13 +196,13 @@ export default function CodexAuthCard() {
       )}
 
       {flowMessage && !flowId && (
-        <p className="text-xs text-zinc-400">{flowMessage}</p>
+        <p className="text-xs text-muted">{flowMessage}</p>
       )}
 
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-[11px] text-zinc-500 leading-relaxed">
-        <strong className="text-zinc-400">Caveats:</strong> ChatGPT subscription rate limits are
+      <div className="rounded-lg border border-border-strong bg-surface-faint p-3 text-[11px] text-muted leading-relaxed">
+        <strong className="text-muted">Caveats:</strong> ChatGPT subscription rate limits are
         much lower than OpenAI Platform API limits. The{' '}
-        <code className="text-zinc-400">chatgpt.com/backend-api/codex</code> endpoints are
+        <code className="text-muted">chatgpt.com/backend-api/codex</code> endpoints are
         undocumented and could change without notice. OpenAI's stance on third-party use of these
         tokens is "supportive but not formal" — known but unblessed. Use at your own risk.
       </div>

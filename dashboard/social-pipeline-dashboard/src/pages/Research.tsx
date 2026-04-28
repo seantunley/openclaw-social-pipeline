@@ -73,15 +73,15 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
         className="w-full flex items-center gap-3 p-4 text-left"
       >
         {expanded ? (
-          <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted shrink-0" />
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-200 truncate">{item.title || item.topic}</p>
+          <p className="text-sm font-medium text-secondaryText truncate">{item.title || item.topic}</p>
           {item.brief && (
-            <p className="text-xs text-zinc-500 truncate mt-0.5">{item.brief}</p>
+            <p className="text-xs text-muted truncate mt-0.5">{item.brief}</p>
           )}
         </div>
 
@@ -106,7 +106,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
 
         <StatusBadge status={item.status} />
 
-        <span className="text-[10px] text-zinc-600 shrink-0 w-20 text-right">
+        <span className="text-[10px] text-faint shrink-0 w-20 text-right">
           {item.researched_at?.split('T')[0]}
         </span>
       </button>
@@ -117,29 +117,29 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
           <div className="grid grid-cols-2 gap-4">
             {item.angle && (
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Angle</p>
-                <p className="text-sm text-zinc-300">{item.angle}</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Angle</p>
+                <p className="text-sm text-secondaryText">{item.angle}</p>
               </div>
             )}
             {item.why_now && (
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Why Now</p>
-                <p className="text-sm text-zinc-300">{item.why_now}</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Why Now</p>
+                <p className="text-sm text-secondaryText">{item.why_now}</p>
               </div>
             )}
           </div>
 
           {item.source_summary && (
-            <div className="bg-white/[0.02] border border-zinc-800 rounded-lg p-3">
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">What Sources Say</p>
-              <p className="text-sm text-zinc-400">{item.source_summary}</p>
+            <div className="bg-surface-faint border border-zinc-800 rounded-lg p-3">
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">What Sources Say</p>
+              <p className="text-sm text-muted">{item.source_summary}</p>
             </div>
           )}
 
           {item.suggested_format && (
             <div>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Suggested Format</p>
-              <span className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-zinc-300">
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Suggested Format</p>
+              <span className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-secondaryText">
                 <FileText className="w-3 h-3 inline mr-1" />
                 {item.suggested_format.replace(/_/g, ' ')}
               </span>
@@ -158,7 +158,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
 
           {(item.sources ?? []).length > 0 && (
             <div>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Sources</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Sources</p>
               <div className="space-y-1">
                 {item.sources.map((s: any, i: number) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
@@ -171,9 +171,9 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
                     >
                       {s.platform}
                     </span>
-                    <span className="text-zinc-400 flex-1 truncate">{s.signal}</span>
+                    <span className="text-muted flex-1 truncate">{s.signal}</span>
                     {s.url && (
-                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-zinc-400">
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-faint hover:text-muted">
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
@@ -219,7 +219,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
               <button
                 onClick={() => statusMutation.mutate('archived')}
                 disabled={statusMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-muted hover:text-secondaryText text-xs transition-colors"
               >
                 <Archive className="w-3 h-3" /> Archive
               </button>
@@ -266,18 +266,18 @@ export default function ResearchPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primaryText flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-indigo-400" />
             Research Library
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+          <p className="text-xs sm:text-sm text-muted mt-1">
             Research findings from pipeline runs — review, approve, and promote to content
           </p>
         </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5 border border-zinc-800 w-fit">
+      <div className="flex gap-1 bg-surface-faint rounded-lg p-0.5 border border-zinc-800 w-fit">
         {[
           { id: 'all', label: 'All' },
           { id: 'pending', label: 'Pending' },
@@ -290,12 +290,12 @@ export default function ResearchPage() {
             onClick={() => setFilter(f.id)}
             className={cn(
               'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              filter === f.id ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
+              filter === f.id ? 'bg-surface-medium text-white shadow-sm' : 'text-muted hover:text-secondaryText'
             )}
           >
             {f.label}
             {counts[f.id as keyof typeof counts] > 0 && (
-              <span className="ml-1.5 text-[10px] text-zinc-600">
+              <span className="ml-1.5 text-[10px] text-faint">
                 ({counts[f.id as keyof typeof counts]})
               </span>
             )}
@@ -309,9 +309,9 @@ export default function ResearchPage() {
         </div>
       ) : displayed.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
-          <FlaskConical className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-500">No research findings yet</p>
-          <p className="text-xs text-zinc-600 mt-1">
+          <FlaskConical className="h-10 w-10 text-faint mx-auto mb-3" />
+          <p className="text-sm text-muted">No research findings yet</p>
+          <p className="text-xs text-faint mt-1">
             Research outputs from pipeline runs will appear here for review
           </p>
         </div>

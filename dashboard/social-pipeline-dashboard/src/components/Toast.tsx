@@ -59,7 +59,7 @@ export default function Toast({ kind, message, onDismiss, durationMs = 4000 }: T
         <p className="flex-1 text-sm leading-relaxed">{message}</p>
         <button
           onClick={onDismiss}
-          className="text-zinc-400 hover:text-zinc-200 -mt-1 -mr-1 p-1 rounded transition-colors"
+          className="text-muted hover:text-secondaryText -mt-1 -mr-1 p-1 rounded transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

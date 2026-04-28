@@ -34,13 +34,13 @@ export default function ConfirmDialog({
               <AlertTriangle className="h-4 w-4 text-red-400" />
             </div>
           )}
-          <div className="text-sm text-zinc-300 leading-relaxed">{message}</div>
+          <div className="text-sm text-secondaryText leading-relaxed">{message}</div>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <button
             onClick={onCancel}
             disabled={busy}
-            className="rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-border-strong px-4 py-2 text-sm text-secondaryText hover:bg-surface-soft disabled:opacity-50"
           >
             {cancelLabel}
           </button>
