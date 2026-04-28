@@ -2,9 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart3, TrendingUp, Eye, MousePointerClick, Heart, Share2, Loader2 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import StatCard from '@/components/StatCard';
+import { useT } from '@/lib/i18n';
 import { fetchSummary, fetchRuns } from '@/lib/api';
 
 export default function Analytics() {
+  const t = useT();
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['summary'],
     queryFn: fetchSummary,
@@ -59,32 +61,32 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primaryText">Analytics</h1>
-        <p className="text-muted mt-1">Performance metrics from Postiz</p>
+        <h1 className="text-2xl font-bold text-primaryText">{t('analytics.title')}</h1>
+        <p className="text-muted mt-1">{t('analytics.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           icon={Eye}
-          label="Total Impressions"
+          label={t('analytics.total_impressions')}
           value={totalImpressions.toLocaleString()}
           gradient="from-blue-600/20 to-blue-400/5"
         />
         <StatCard
           icon={Heart}
-          label="Total Engagement"
+          label={t('analytics.total_engagement')}
           value={totalEngagement.toLocaleString()}
           gradient="from-pink-600/20 to-pink-400/5"
         />
         <StatCard
           icon={MousePointerClick}
-          label="Total Clicks"
+          label={t('analytics.total_clicks')}
           value={totalClicks.toLocaleString()}
           gradient="from-amber-600/20 to-amber-400/5"
         />
         <StatCard
           icon={TrendingUp}
-          label="Avg CTR"
+          label={t('analytics.avg_ctr')}
           value={`${avgCTR}%`}
           gradient="from-emerald-600/20 to-emerald-400/5"
         />
@@ -94,7 +96,7 @@ export default function Analytics() {
         <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
           <h3 className="text-sm font-medium text-secondaryText mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-indigo-400" />
-            Engagement Over Time
+            {t('analytics.engagement_over_time')}
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={engagementOverTime}>
@@ -119,7 +121,7 @@ export default function Analytics() {
         <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
           <h3 className="text-sm font-medium text-secondaryText mb-4 flex items-center gap-2">
             <Share2 className="w-4 h-4 text-indigo-400" />
-            Performance by Platform
+            {t('analytics.performance_by_platform')}
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={platformBreakdown}>
@@ -142,9 +144,9 @@ export default function Analytics() {
       </div>
 
       <div className="bg-surface-soft backdrop-blur border border-border-strong rounded-xl p-6">
-        <h3 className="text-sm font-medium text-secondaryText mb-4">Top Performing Posts</h3>
+        <h3 className="text-sm font-medium text-secondaryText mb-4">{t('analytics.top_posts')}</h3>
         {publishedRuns.length === 0 ? (
-          <p className="text-muted text-sm">No published posts with analytics yet. Sync analytics from Postiz to see results.</p>
+          <p className="text-muted text-sm">{t('analytics.no_published')}</p>
         ) : (
           <div className="space-y-3">
             {publishedRuns.slice(0, 5).map((run: any, i: number) => (

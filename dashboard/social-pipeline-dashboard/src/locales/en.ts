@@ -397,6 +397,30 @@ const en = {
     },
   },
 
+  analytics: {
+    title: 'Analytics',
+    subtitle: 'Performance metrics from Postiz',
+    total_impressions: 'Total Impressions',
+    total_engagement: 'Total Engagement',
+    total_clicks: 'Total Clicks',
+    avg_ctr: 'Avg CTR',
+    engagement_over_time: 'Engagement Over Time',
+    performance_by_platform: 'Performance by Platform',
+    top_posts: 'Top Performing Posts',
+    no_published: 'No published posts with analytics yet. Sync analytics from Postiz to see results.',
+  },
+
+  system: {
+    pointers: 'Pointers',
+    engine_version: 'Engine version',
+    dashboard: 'Dashboard',
+    api: 'API',
+    db_path: 'DB path',
+    codex_auth: 'Codex auth file',
+    notes: 'Notes',
+    notes_subtitle: "What honestly works vs. what's still placeholder.",
+  },
+
   runs: {
     title: 'Pipeline Runs',
     subtitle: 'View and manage content pipeline runs',

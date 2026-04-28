@@ -805,34 +805,35 @@ function BatchRow({ batch, onDelete }: { batch: ImportBatch; onDelete: () => voi
 // ─── System tab ─────────────────────────────────────────────────────────────
 
 function SystemTab() {
+  const t = useT();
   return (
     <div className="space-y-6 max-w-3xl">
-      <Card title="Pointers">
+      <Card title={t('system.pointers')}>
         <ul className="space-y-2 text-sm text-secondaryText">
           <li className="flex justify-between">
-            <span className="text-muted">Engine version</span>
+            <span className="text-muted">{t('system.engine_version')}</span>
             <code className="text-secondaryText">0.2.0</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-muted">Dashboard</span>
+            <span className="text-muted">{t('system.dashboard')}</span>
             <code className="text-secondaryText">http://localhost:3001</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-muted">API</span>
+            <span className="text-muted">{t('system.api')}</span>
             <code className="text-secondaryText">http://localhost:3000</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-muted">DB path</span>
+            <span className="text-muted">{t('system.db_path')}</span>
             <code className="text-secondaryText">engine/data/social-pipeline.db</code>
           </li>
           <li className="flex justify-between">
-            <span className="text-muted">Codex auth file</span>
+            <span className="text-muted">{t('system.codex_auth')}</span>
             <code className="text-secondaryText">~/.codex/auth.json</code>
           </li>
         </ul>
       </Card>
 
-      <Card title="Notes" subtitle="What honestly works vs. what's still placeholder.">
+      <Card title={t('system.notes')} subtitle={t('system.notes_subtitle')}>
         <div className="space-y-2 text-sm">
           <p className="flex items-start gap-2 text-emerald-300">
             <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />

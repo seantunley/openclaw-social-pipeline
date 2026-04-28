@@ -397,6 +397,30 @@ const ru = {
     },
   },
 
+  analytics: {
+    title: 'Аналитика',
+    subtitle: 'Метрики эффективности из Postiz',
+    total_impressions: 'Всего показов',
+    total_engagement: 'Всего вовлечённости',
+    total_clicks: 'Всего кликов',
+    avg_ctr: 'Средний CTR',
+    engagement_over_time: 'Вовлечённость по времени',
+    performance_by_platform: 'Эффективность по платформам',
+    top_posts: 'Лучшие публикации',
+    no_published: 'Опубликованных постов с аналитикой пока нет. Синхронизируйте аналитику из Postiz, чтобы увидеть результаты.',
+  },
+
+  system: {
+    pointers: 'Указатели',
+    engine_version: 'Версия движка',
+    dashboard: 'Панель',
+    api: 'API',
+    db_path: 'Путь к БД',
+    codex_auth: 'Файл авторизации Codex',
+    notes: 'Заметки',
+    notes_subtitle: 'Что реально работает vs. что ещё заглушка.',
+  },
+
   runs: {
     title: 'Запуски пайплайна',
     subtitle: 'Просмотр и управление запусками контент-пайплайна',

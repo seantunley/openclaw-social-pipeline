@@ -397,6 +397,30 @@ const fr = {
     },
   },
 
+  analytics: {
+    title: 'Analytique',
+    subtitle: 'Mesures de performance depuis Postiz',
+    total_impressions: 'Impressions totales',
+    total_engagement: 'Engagement total',
+    total_clicks: 'Clics totaux',
+    avg_ctr: 'CTR moyen',
+    engagement_over_time: 'Engagement dans le temps',
+    performance_by_platform: 'Performance par plateforme',
+    top_posts: 'Meilleures publications',
+    no_published: 'Aucune publication avec analytique pour le moment. Synchronisez l\'analytique depuis Postiz pour voir les résultats.',
+  },
+
+  system: {
+    pointers: 'Repères',
+    engine_version: 'Version du moteur',
+    dashboard: 'Tableau de bord',
+    api: 'API',
+    db_path: 'Chemin de la base',
+    codex_auth: 'Fichier d\'auth Codex',
+    notes: 'Notes',
+    notes_subtitle: 'Ce qui fonctionne vraiment vs. ce qui est encore un placeholder.',
+  },
+
   runs: {
     title: 'Exécutions du pipeline',
     subtitle: 'Consulter et gérer les exécutions du pipeline de contenu',
