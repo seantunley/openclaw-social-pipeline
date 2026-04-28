@@ -140,24 +140,24 @@ export default function Campaigns() {
           setShowCreate(false);
           setFormData({ name: '', platforms: [], description: '' });
         }}
-        title="Create Campaign"
+        title={t('campaigns.create_title')}
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-secondaryText mb-1.5">
-              Campaign Name
+              {t('campaigns.field.name')}
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-              placeholder="e.g., Q1 Product Launch"
+              placeholder={t('campaigns.field.name_placeholder')}
               className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-2.5 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-secondaryText mb-1.5">
-              Platforms
+              {t('campaigns.field.platforms')}
             </label>
             <div className="flex flex-wrap gap-2">
               {platformOptions.map((p) => (
@@ -178,14 +178,14 @@ export default function Campaigns() {
           </div>
           <div>
             <label className="block text-sm font-medium text-secondaryText mb-1.5">
-              Description
+              {t('campaigns.field.description')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, description: e.target.value }))
               }
-              placeholder="Brief description of the campaign..."
+              placeholder={t('campaigns.field.description_placeholder')}
               rows={3}
               className="w-full rounded-lg bg-zinc-800 border border-border-strong px-4 py-2.5 text-sm text-primaryText placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
@@ -195,14 +195,14 @@ export default function Campaigns() {
               onClick={() => setShowCreate(false)}
               className="rounded-lg px-4 py-2 text-sm text-muted hover:text-secondaryText"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={() => createCampaign.mutate(formData)}
               disabled={!formData.name.trim() || createCampaign.isPending}
               className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {createCampaign.isPending ? 'Creating...' : 'Create Campaign'}
+              {createCampaign.isPending ? t('campaigns.creating') : t('campaigns.create_campaign')}
             </button>
           </div>
         </div>

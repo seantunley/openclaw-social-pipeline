@@ -135,7 +135,7 @@ export default function BrandVoice() {
           className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
-          {save.isPending ? 'Saving…' : 'Save profile'}
+          {save.isPending ? t('brand.saving') : t('brand.save_profile')}
         </button>
       </div>
 
@@ -151,7 +151,7 @@ export default function BrandVoice() {
         </div>
       ) : (
         <div className="space-y-6">
-          <Section label="Identity">
+          <Section label={t('brand.section.identity')}>
             <Field label="Brand name" value={draft.name} onChange={(v) => set('name', v)} placeholder="e.g. Latch & Learn" />
             <Field label="One-liner description" value={draft.description} onChange={(v) => set('description', v)} placeholder="What you do, in one sentence" />
             <Textarea label="Mission" value={draft.mission} onChange={(v) => set('mission', v)} placeholder="Long-form mission statement" rows={3} />
@@ -163,7 +163,7 @@ export default function BrandVoice() {
             />
           </Section>
 
-          <Section label="Audience">
+          <Section label={t('brand.section.audience')}>
             <Textarea label="Primary audience" value={draft.audience} onChange={(v) => set('audience', v)} placeholder="Who you write to. Be specific." rows={2} />
             <Field
               label="Pain points (semicolon-separated)"
@@ -179,24 +179,24 @@ export default function BrandVoice() {
             />
           </Section>
 
-          <Section label="Voice & tone">
+          <Section label={t('brand.section.voice_tone')}>
             <Textarea label="Tone" value={draft.tone} onChange={(v) => set('tone', v)} placeholder="warm, authoritative, not preachy, lightly self-deprecating" rows={2} />
             <Textarea label="Voice" value={draft.voice} onChange={(v) => set('voice', v)} placeholder="second person, contractions allowed, no exclamation marks, never address the reader as 'guys'" rows={2} />
             <Textarea label="Writing guidelines" value={draft.writing_guidelines} onChange={(v) => set('writing_guidelines', v)} placeholder="sentence length cap, paragraph rhythm, opening conventions" rows={4} />
           </Section>
 
-          <Section label="Vocabulary">
+          <Section label={t('brand.section.vocabulary')}>
             <Field label="Banned words / phrases (comma-separated)" value={draft.banned_words} onChange={(v) => set('banned_words', v)} placeholder="game-changer, leverage, synergy" />
             <Field label="Required phrases (separated by |)" value={draft.required_phrases} onChange={(v) => set('required_phrases', v)} placeholder="Trust your body. | We see you." />
             <Field label="Signature phrases (separated by |)" value={draft.signature_phrases} onChange={(v) => set('signature_phrases', v)} placeholder="optional repeating phrases" />
           </Section>
 
-          <Section label="SEO + GEO targeting">
+          <Section label={t('brand.section.seo_geo')}>
             <Field label="Target keywords (comma-separated)" value={draft.target_keywords} onChange={(v) => set('target_keywords', v)} placeholder="breastfeeding support, donor milk, NICU mom" />
             <Field label="Default hashtags (space-separated)" value={draft.target_hashtags} onChange={(v) => set('target_hashtags', v)} placeholder="#breastfeeding #latchandlearn #nicumom" />
           </Section>
 
-          <Section label="Visual identity">
+          <Section label={t('brand.section.visual')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <ColorField label="Primary" value={draft.primary_color} onChange={(v) => set('primary_color', v)} />
               <ColorField label="Secondary" value={draft.secondary_color} onChange={(v) => set('secondary_color', v)} />

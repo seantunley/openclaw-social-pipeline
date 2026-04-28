@@ -253,6 +253,16 @@ const ru = {
     new: 'Новая кампания',
     empty_title: 'Кампаний пока нет',
     empty_body: 'Создайте первую кампанию, чтобы начать',
+    create_title: 'Создать кампанию',
+    create_campaign: 'Создать кампанию',
+    creating: 'Создание…',
+    field: {
+      name: 'Название кампании',
+      name_placeholder: 'напр. Запуск продукта Q1',
+      platforms: 'Платформы',
+      description: 'Описание',
+      description_placeholder: 'Краткое описание кампании…',
+    },
   },
 
   learnings: {
@@ -269,6 +279,16 @@ const ru = {
   brand: {
     title: 'Голос бренда',
     subtitle: 'Загружается в каждый запрос. Свободный текст добавляется как есть; списки принимают значения через запятую.',
+    saving: 'Сохранение…',
+    save_profile: 'Сохранить профиль',
+    section: {
+      identity: 'Идентичность',
+      audience: 'Аудитория',
+      voice_tone: 'Голос и тон',
+      vocabulary: 'Словарь',
+      seo_geo: 'SEO + GEO таргетинг',
+      visual: 'Визуальная идентичность',
+    },
   },
 
   schedule: {
@@ -324,6 +344,43 @@ const ru = {
       approve: 'Ожидает утверждения',
       publish: 'Публикация',
       analytics: 'Синхронизация аналитики',
+    },
+    pipeline_progress: 'Прогресс пайплайна',
+    no_drafts: 'Черновики ещё не сгенерированы',
+    no_media: 'Медиа ещё не сгенерированы',
+    no_compliance: 'Нет данных соответствия',
+    no_analytics: 'Нет данных аналитики',
+    no_activity: 'Активности нет.',
+    analysis: 'Анализ',
+    activity: 'Активность',
+    regenerate: 'Перегенерировать',
+    media: {
+      reset: 'Сброс',
+      prompt_label: 'Промпт генерации',
+      edited: '(изменено)',
+    },
+    preview: {
+      extracting: 'Извлечение правил…',
+      save_learn: 'Сохранить и обучить',
+    },
+    readability: {
+      title: 'Читаемость',
+      improve: 'Улучшить читаемость',
+      edits_applied: 'Применённые правки',
+      still_hard: 'Всё ещё сложно?',
+      flesch: 'Flesch',
+      grade_level: 'Уровень образования',
+      current: 'Текущая читаемость',
+      generate_improved: 'Сгенерировать улучшенную версию',
+      original: 'Оригинал',
+      improved: 'Улучшено',
+      keep_original: 'Оставить оригинал',
+      accept_improved: 'Принять улучшение',
+      discard: 'Отклонить',
+      push_harder: 'Усилить упрощение',
+    },
+    seogeo: {
+      citation_readiness: 'Готовность к цитированию ИИ',
     },
   },
 

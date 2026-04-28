@@ -255,7 +255,7 @@ export default function RunDetail() {
                     actionLoading === 'regenerateDraft' && 'animate-spin'
                   )}
                 />
-                Regenerate
+                {t('rundetail.regenerate')}
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -271,7 +271,7 @@ export default function RunDetail() {
               ))}
             </div>
             {drafts.length === 0 && (
-              <p className="text-sm text-muted py-8 text-center">No drafts generated yet</p>
+              <p className="text-sm text-muted py-8 text-center">{t('rundetail.no_drafts')}</p>
             )}
           </div>
         );
@@ -325,7 +325,7 @@ export default function RunDetail() {
               </div>
             ) : (
               <p className="text-sm text-muted py-8 text-center">
-                No compliance data yet
+                {t('rundetail.no_compliance')}
               </p>
             )}
           </div>
@@ -523,7 +523,7 @@ export default function RunDetail() {
               </pre>
             ) : (
               <p className="text-sm text-muted py-8 text-center">
-                No analytics data available yet
+                {t('rundetail.no_analytics')}
               </p>
             )}
           </div>
@@ -595,7 +595,7 @@ export default function RunDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-4">
           <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
-            <h3 className="text-sm font-semibold text-primaryText mb-4">Pipeline Progress</h3>
+            <h3 className="text-sm font-semibold text-primaryText mb-4">{t('rundetail.pipeline_progress')}</h3>
             <PipelineTimeline
               currentStage={run.currentStage}
               stageStatuses={stageStatuses}
@@ -653,6 +653,7 @@ interface MediaTabProps {
 }
 
 function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSelect }: MediaTabProps) {
+  const t = useT();
   // Pull the prompt from the first hosted asset; that's the most recent
   // generation's editorial prompt. Operator edits are local-only until
   // they hit "Regenerate", at which point the new prompt is sent to the
@@ -678,7 +679,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
             onClick={() => setShowPrompt((v) => !v)}
             className="text-xs text-muted hover:text-secondaryText"
           >
-            {showPrompt ? '▾' : '▸'} Generation prompt {dirty && <span className="text-amber-400 ml-1">(edited)</span>}
+            {showPrompt ? '▾' : '▸'} {t('rundetail.media.prompt_label')} {dirty && <span className="text-amber-400 ml-1">{t('rundetail.media.edited')}</span>}
           </button>
           <div className="flex items-center gap-2">
             {dirty && (
@@ -687,7 +688,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
                 onClick={() => setPrompt(seed)}
                 className="text-xs text-muted hover:text-secondaryText"
               >
-                Reset
+                {t('rundetail.media.reset')}
               </button>
             )}
             <button
@@ -731,7 +732,7 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
       {assets.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-muted">
           <ImageIcon className="h-10 w-10 mb-3" />
-          <p className="text-sm">No media generated yet</p>
+          <p className="text-sm">{t('rundetail.no_media')}</p>
         </div>
       )}
     </div>
@@ -749,6 +750,7 @@ interface PreviewPaneProps {
 }
 
 function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPaneProps) {
+  const t = useT();
   const drafts = run.drafts || [];
   const primary = drafts.find((d: any) => d.selected) ?? drafts[0];
   const media = run.media || run.mediaAssets || [];
@@ -927,7 +929,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
                 onClick={cancelEdit}
                 className="rounded-lg border border-border-strong px-3 py-1.5 text-xs text-muted hover:text-secondaryText hover:bg-surface-soft"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveEdit}
@@ -938,7 +940,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
                 className="flex items-center gap-2 rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="h-3.5 w-3.5" />
-                {busy === 'edit' ? 'Extracting rules…' : 'Save & Learn'}
+                {busy === 'edit' ? t('rundetail.preview.extracting') : t('rundetail.preview.save_learn')}
               </button>
             </div>
           </div>
@@ -988,6 +990,7 @@ function ReadabilityTab({
   runId: string;
   refetch: () => void;
 }) {
+  const t = useT();
   const drafts = (run.drafts ?? []) as any[];
   const primary = drafts.find((d) => d.selected) ?? drafts[0];
   const original: string =
@@ -1049,7 +1052,7 @@ function ReadabilityTab({
       {/* Metric toggle + target band header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-sm font-semibold text-primaryText">Readability</p>
+          <p className="text-sm font-semibold text-primaryText">{t('rundetail.readability.title')}</p>
           <p className="text-[11px] text-muted">
             Scoring system:{' '}
             <span className="text-secondaryText">
@@ -1072,7 +1075,7 @@ function ReadabilityTab({
               metric === 'flesch' ? 'bg-surface-medium text-primaryText' : 'text-muted hover:text-secondaryText',
             )}
           >
-            Flesch
+            {t('rundetail.readability.flesch')}
           </button>
           <button
             onClick={() => setMetric('grade')}
@@ -1081,20 +1084,20 @@ function ReadabilityTab({
               metric === 'grade' ? 'bg-surface-medium text-primaryText' : 'text-muted hover:text-secondaryText',
             )}
           >
-            Grade level
+            {t('rundetail.readability.grade_level')}
           </button>
         </div>
       </div>
 
       {/* Score + explanation */}
-      <ReadabilityCard label="Current readability" score={originalScore} metric={metric} />
+      <ReadabilityCard label={t('rundetail.readability.current')} score={originalScore} metric={metric} />
       <ReadabilityExplanation score={originalScore} metric={metric} />
 
       {/* Improve action */}
       {improved == null ? (
         <div className="rounded-xl border border-border-strong bg-surface-soft p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-sm text-secondaryText font-medium">Improve readability</p>
+            <p className="text-sm text-secondaryText font-medium">{t('rundetail.readability.improve')}</p>
             <p className="text-[11px] text-muted">
               One LLM pass. Shorter sentences, simpler words. Facts and citations preserved exactly.
             </p>
@@ -1105,7 +1108,7 @@ function ReadabilityTab({
             className="flex items-center gap-2 rounded-md border border-brand-purple/40 bg-brand-purple/15 px-3 py-1.5 text-xs font-medium text-brand-cyan hover:bg-brand-purple/25 disabled:opacity-50"
           >
             <RefreshCw className={cn('h-3.5 w-3.5', busy === 'improve' && 'animate-spin')} />
-            Generate improved version
+            {t('rundetail.readability.generate_improved')}
           </button>
         </div>
       ) : (
@@ -1113,17 +1116,17 @@ function ReadabilityTab({
           {/* Side-by-side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <VersionCard
-              label="Original"
+              label={t('rundetail.readability.original')}
               score={originalScore}
               metric={metric}
               content={original}
               tone="neutral"
               onAccept={() => onAccept('original')}
               busy={busy === 'accept-original'}
-              acceptLabel="Keep original"
+              acceptLabel={t('rundetail.readability.keep_original')}
             />
             <VersionCard
-              label="Improved"
+              label={t('rundetail.readability.improved')}
               score={improvedScore}
               metric={metric}
               content={improved}
@@ -1134,7 +1137,7 @@ function ReadabilityTab({
               }
               onAccept={() => onAccept('improved')}
               busy={busy === 'accept-improved'}
-              acceptLabel="Accept improved"
+              acceptLabel={t('rundetail.readability.accept_improved')}
               delta={
                 originalScore && improvedScore
                   ? improvedScore.score - originalScore.score
@@ -1146,7 +1149,7 @@ function ReadabilityTab({
           {/* Change log */}
           {changes.length > 0 && (
             <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
-              <p className="text-xs font-semibold text-secondaryText mb-2">Edits applied</p>
+              <p className="text-xs font-semibold text-secondaryText mb-2">{t('rundetail.readability.edits_applied')}</p>
               <ul className="space-y-1">
                 {changes.map((c, i) => (
                   <li key={i} className="text-[11px] text-muted flex gap-2">
@@ -1161,7 +1164,7 @@ function ReadabilityTab({
           {/* Push harder + discard row */}
           <div className="flex items-center justify-between flex-wrap gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-secondaryText font-medium">Still too hard?</p>
+              <p className="text-sm text-secondaryText font-medium">{t('rundetail.readability.still_hard')}</p>
               <p className="text-[11px] text-muted">
                 Push harder applies aggressive caps: 14-word sentence max, replace 3+ syllable words, no subordinate clauses. Iterates from the current improved version.
               </p>
@@ -1174,7 +1177,7 @@ function ReadabilityTab({
                 }}
                 className="text-[11px] text-muted hover:text-secondaryText"
               >
-                Discard
+                {t('rundetail.readability.discard')}
               </button>
               <button
                 onClick={() => onImprove('aggressive')}
@@ -1182,7 +1185,7 @@ function ReadabilityTab({
                 className="flex items-center gap-2 rounded-md bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/30 disabled:opacity-50"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', busy === 'aggressive' && 'animate-spin')} />
-                Push harder for simplicity
+                {t('rundetail.readability.push_harder')}
               </button>
             </div>
           </div>
@@ -1413,6 +1416,7 @@ function VersionCard({
 // ─── SEO / GEO tab ──────────────────────────────────────────────────────
 
 function SeoGeoTab({ run }: { run: any }) {
+  const t = useT();
   // Pull from generate stage (canonical source) and draft metadata (where the
   // pipeline persists `seo_details`, `eeat_signals`, `ai_citation_readiness`).
   const generate = (run.stages ?? []).find((s: any) => s.stage_name === 'generate');
@@ -1457,7 +1461,7 @@ function SeoGeoTab({ run }: { run: any }) {
       {aiCitation && (
         <div className="rounded-xl border border-brand-cyan/30 bg-brand-cyan/5 p-4">
           <p className="text-[10px] uppercase tracking-wider text-brand-cyan font-medium mb-2">
-            AI Citation Readiness
+            {t('rundetail.seogeo.citation_readiness')}
           </p>
           <p className="text-sm text-secondaryText">{aiCitation}</p>
         </div>
@@ -1560,6 +1564,7 @@ function num(v: unknown): number | null {
 // ─── Analysis block (SEO / Compliance / Readability) ────────────────────
 
 function AnalysisBlock({ run }: { run: any }) {
+  const t = useT();
   // Pull the strongest content available — same precedence the rest of the
   // page uses. SEO & compliance come straight from the pipeline; readability
   // is computed client-side via Flesch reading ease (no extra LLM call).
@@ -1590,7 +1595,7 @@ function AnalysisBlock({ run }: { run: any }) {
     <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
       <h3 className="text-sm font-semibold text-primaryText mb-4 flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-brand-cyan" />
-        Analysis
+        {t('rundetail.analysis')}
       </h3>
       <div className="space-y-3">
         <ScoreRow
@@ -1737,6 +1742,7 @@ function countSyllables(word: string): number {
 // ─── Activity block (run timeline) ──────────────────────────────────────
 
 function ActivityBlock({ stages }: { stages: any[] }) {
+  const t = useT();
   // Sort chronologically: started_at if set, otherwise order_index.
   const events = (stages ?? [])
     .map((s) => ({
@@ -1758,10 +1764,10 @@ function ActivityBlock({ stages }: { stages: any[] }) {
     <div className="rounded-xl border border-border-strong bg-surface-soft backdrop-blur-sm p-5">
       <h3 className="text-sm font-semibold text-primaryText mb-4 flex items-center gap-2">
         <Activity className="h-4 w-4 text-brand-cyan" />
-        Activity
+        {t('rundetail.activity')}
       </h3>
       {events.length === 0 ? (
-        <p className="text-xs text-muted">No activity yet.</p>
+        <p className="text-xs text-muted">{t('rundetail.no_activity')}</p>
       ) : (
         <ol className="relative space-y-3 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-surface-medium">
           {events.map((e, i) => (

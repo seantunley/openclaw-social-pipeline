@@ -253,6 +253,16 @@ const en = {
     new: 'New Campaign',
     empty_title: 'No campaigns yet',
     empty_body: 'Create your first campaign to get started',
+    create_title: 'Create Campaign',
+    create_campaign: 'Create Campaign',
+    creating: 'Creating…',
+    field: {
+      name: 'Campaign Name',
+      name_placeholder: 'e.g., Q1 Product Launch',
+      platforms: 'Platforms',
+      description: 'Description',
+      description_placeholder: 'Brief description of the campaign…',
+    },
   },
 
   learnings: {
@@ -269,6 +279,16 @@ const en = {
   brand: {
     title: 'Brand voice',
     subtitle: 'Loaded into every prompt at run time. Free-text fields are appended verbatim; list fields take comma-separated values.',
+    saving: 'Saving…',
+    save_profile: 'Save profile',
+    section: {
+      identity: 'Identity',
+      audience: 'Audience',
+      voice_tone: 'Voice & tone',
+      vocabulary: 'Vocabulary',
+      seo_geo: 'SEO + GEO targeting',
+      visual: 'Visual identity',
+    },
   },
 
   schedule: {
@@ -324,6 +344,43 @@ const en = {
       approve: 'Awaiting approval',
       publish: 'Publishing',
       analytics: 'Analytics sync',
+    },
+    pipeline_progress: 'Pipeline Progress',
+    no_drafts: 'No drafts generated yet',
+    no_media: 'No media generated yet',
+    no_compliance: 'No compliance data yet',
+    no_analytics: 'No analytics data available yet',
+    no_activity: 'No activity yet.',
+    analysis: 'Analysis',
+    activity: 'Activity',
+    regenerate: 'Regenerate',
+    media: {
+      reset: 'Reset',
+      prompt_label: 'Generation prompt',
+      edited: '(edited)',
+    },
+    preview: {
+      extracting: 'Extracting rules…',
+      save_learn: 'Save & Learn',
+    },
+    readability: {
+      title: 'Readability',
+      improve: 'Improve readability',
+      edits_applied: 'Edits applied',
+      still_hard: 'Still too hard?',
+      flesch: 'Flesch',
+      grade_level: 'Grade level',
+      current: 'Current readability',
+      generate_improved: 'Generate improved version',
+      original: 'Original',
+      improved: 'Improved',
+      keep_original: 'Keep original',
+      accept_improved: 'Accept improved',
+      discard: 'Discard',
+      push_harder: 'Push harder for simplicity',
+    },
+    seogeo: {
+      citation_readiness: 'AI Citation Readiness',
     },
   },
 

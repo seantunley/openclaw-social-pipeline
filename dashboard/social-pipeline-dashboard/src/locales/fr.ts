@@ -253,6 +253,16 @@ const fr = {
     new: 'Nouvelle campagne',
     empty_title: 'Aucune campagne',
     empty_body: 'Créez votre première campagne pour commencer',
+    create_title: 'Créer une campagne',
+    create_campaign: 'Créer la campagne',
+    creating: 'Création…',
+    field: {
+      name: 'Nom de la campagne',
+      name_placeholder: 'ex. Lancement produit Q1',
+      platforms: 'Plateformes',
+      description: 'Description',
+      description_placeholder: 'Brève description de la campagne…',
+    },
   },
 
   learnings: {
@@ -269,6 +279,16 @@ const fr = {
   brand: {
     title: 'Voix de marque',
     subtitle: 'Chargée dans chaque prompt à l\'exécution. Les champs libres sont ajoutés tels quels ; les champs liste prennent des valeurs séparées par des virgules.',
+    saving: 'Enregistrement…',
+    save_profile: 'Enregistrer le profil',
+    section: {
+      identity: 'Identité',
+      audience: 'Audience',
+      voice_tone: 'Voix et ton',
+      vocabulary: 'Vocabulaire',
+      seo_geo: 'Ciblage SEO + GEO',
+      visual: 'Identité visuelle',
+    },
   },
 
   schedule: {
@@ -324,6 +344,43 @@ const fr = {
       approve: 'En attente d\'approbation',
       publish: 'Publication',
       analytics: 'Sync analytique',
+    },
+    pipeline_progress: 'Progression du pipeline',
+    no_drafts: 'Aucun brouillon généré',
+    no_media: 'Aucun média généré',
+    no_compliance: 'Aucune donnée de conformité',
+    no_analytics: 'Aucune donnée analytique disponible',
+    no_activity: 'Aucune activité.',
+    analysis: 'Analyse',
+    activity: 'Activité',
+    regenerate: 'Régénérer',
+    media: {
+      reset: 'Réinitialiser',
+      prompt_label: 'Prompt de génération',
+      edited: '(modifié)',
+    },
+    preview: {
+      extracting: 'Extraction des règles…',
+      save_learn: 'Enregistrer et apprendre',
+    },
+    readability: {
+      title: 'Lisibilité',
+      improve: 'Améliorer la lisibilité',
+      edits_applied: 'Modifications appliquées',
+      still_hard: 'Toujours trop difficile ?',
+      flesch: 'Flesch',
+      grade_level: 'Niveau scolaire',
+      current: 'Lisibilité actuelle',
+      generate_improved: 'Générer une version améliorée',
+      original: 'Original',
+      improved: 'Amélioré',
+      keep_original: 'Garder l\'original',
+      accept_improved: 'Accepter l\'amélioré',
+      discard: 'Annuler',
+      push_harder: 'Pousser plus loin la simplicité',
+    },
+    seogeo: {
+      citation_readiness: 'Préparation à la citation IA',
     },
   },
 
