@@ -29,24 +29,24 @@ const PLATFORM_COLORS: Record<string, string> = {
   default: '#a78bfa',
 };
 
-const TYPE_ICONS: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-  comment: { icon: <MessageCircle className="h-4 w-4" />, label: 'Comment', color: 'text-blue-400' },
-  mention: { icon: <AtSign className="h-4 w-4" />, label: 'Mention', color: 'text-purple-400' },
-  like: { icon: <Heart className="h-4 w-4" />, label: 'Like', color: 'text-pink-400' },
-  share: { icon: <Share2 className="h-4 w-4" />, label: 'Share', color: 'text-green-400' },
-  reply: { icon: <MessageCircle className="h-4 w-4" />, label: 'Reply', color: 'text-cyan-400' },
+const TYPE_ICONS: Record<string, { icon: React.ReactNode; key: string; color: string }> = {
+  comment: { icon: <MessageCircle className="h-4 w-4" />, key: 'comment', color: 'text-blue-400' },
+  mention: { icon: <AtSign className="h-4 w-4" />, key: 'mention', color: 'text-purple-400' },
+  like: { icon: <Heart className="h-4 w-4" />, key: 'like', color: 'text-pink-400' },
+  share: { icon: <Share2 className="h-4 w-4" />, key: 'share', color: 'text-green-400' },
+  reply: { icon: <MessageCircle className="h-4 w-4" />, key: 'reply', color: 'text-cyan-400' },
 };
 
-function getRelativeTime(iso: string): string {
+function getRelativeTime(iso: string, t: (k: string, v?: any) => string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('inbox.time.just_now');
+  if (mins < 60) return t('inbox.time.minutes', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('inbox.time.hours', { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  if (days < 7) return t('inbox.time.days', { n: days });
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export default function InboxPage() {
@@ -219,12 +219,12 @@ export default function InboxPage() {
                     {/* Header row */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-secondaryText">
-                        {item.author?.name ?? item.username ?? 'Unknown'}
+                        {item.author?.name ?? item.username ?? t('inbox.unknown_user')}
                       </span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-1 ${typeInfo.color} bg-white/[0.05]`}
                       >
-                        {typeInfo.icon} {typeInfo.label}
+                        {typeInfo.icon} {t(`inbox.type.${typeInfo.key}`)}
                       </span>
                       <span
                         className="text-[10px] px-1.5 py-0.5 rounded-full capitalize"
@@ -233,7 +233,7 @@ export default function InboxPage() {
                         {item.platform}
                       </span>
                       <span className="text-[10px] text-faint ml-auto shrink-0">
-                        {item.createdAt ? getRelativeTime(item.createdAt) : ''}
+                        {item.createdAt ? getRelativeTime(item.createdAt, t) : ''}
                       </span>
                     </div>
 
@@ -244,7 +244,7 @@ export default function InboxPage() {
 
                     {/* Post context */}
                     {item.postTitle && (
-                      <p className="text-xs text-faint mt-1 truncate">on: {item.postTitle}</p>
+                      <p className="text-xs text-faint mt-1 truncate">{t('inbox.on_post', { title: item.postTitle })}</p>
                     )}
 
                     {/* Actions */}
@@ -256,13 +256,13 @@ export default function InboxPage() {
                         }}
                         className="text-[11px] text-muted hover:text-secondaryText flex items-center gap-1 transition-colors"
                       >
-                        <MessageCircle className="h-3 w-3" /> Reply
+                        <MessageCircle className="h-3 w-3" /> {t('inbox.action.reply')}
                       </button>
                       <button
                         onClick={() => handleReact(item.postId ?? item.id)}
                         className="text-[11px] text-muted hover:text-pink-400 flex items-center gap-1 transition-colors"
                       >
-                        <Heart className="h-3 w-3" /> Like
+                        <Heart className="h-3 w-3" /> {t('inbox.action.like')}
                       </button>
                       {item.url && (
                         <a
@@ -271,7 +271,7 @@ export default function InboxPage() {
                           rel="noopener noreferrer"
                           className="text-[11px] text-muted hover:text-secondaryText flex items-center gap-1 transition-colors"
                         >
-                          <ExternalLink className="h-3 w-3" /> View
+                          <ExternalLink className="h-3 w-3" /> {t('inbox.action.view')}
                         </a>
                       )}
                     </div>
@@ -286,7 +286,7 @@ export default function InboxPage() {
                             e.key === 'Enter' &&
                             handleReply(item.postId ?? item.id, item.commentId ?? item.id)
                           }
-                          placeholder="Write a reply..."
+                          placeholder={t('inbox.reply_placeholder')}
                           className="flex-1 bg-surface-faint border border-zinc-800 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint focus:outline-none focus:border-indigo-500"
                           autoFocus
                         />

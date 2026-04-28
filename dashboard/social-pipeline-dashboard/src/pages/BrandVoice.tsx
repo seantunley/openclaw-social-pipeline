@@ -110,10 +110,10 @@ export default function BrandVoice() {
     mutationFn: () => saveBrandProfile(draft as unknown as Partial<import('@/lib/api').BrandProfile>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brand-profile'] });
-      setToast({ kind: 'success', message: 'Brand voice saved. Future runs will apply it.' });
+      setToast({ kind: 'success', message: t('brand.saved') });
     },
     onError: (err) => {
-      setToast({ kind: 'error', message: `Save failed: ${(err as Error).message}` });
+      setToast({ kind: 'error', message: t('brand.save_failed', { message: (err as Error).message }) });
     },
   });
 
@@ -152,57 +152,58 @@ export default function BrandVoice() {
       ) : (
         <div className="space-y-6">
           <Section label={t('brand.section.identity')}>
-            <Field label="Brand name" value={draft.name} onChange={(v) => set('name', v)} placeholder="e.g. Latch & Learn" />
-            <Field label="One-liner description" value={draft.description} onChange={(v) => set('description', v)} placeholder="What you do, in one sentence" />
-            <Textarea label="Mission" value={draft.mission} onChange={(v) => set('mission', v)} placeholder="Long-form mission statement" rows={3} />
+            <Field label={t('brand.field.name')} value={draft.name} onChange={(v) => set('name', v)} placeholder={t('brand.field.name_ph')} />
+            <Field label={t('brand.field.description')} value={draft.description} onChange={(v) => set('description', v)} placeholder={t('brand.field.description_ph')} />
+            <Textarea label={t('brand.field.mission')} value={draft.mission} onChange={(v) => set('mission', v)} placeholder={t('brand.field.mission_ph')} rows={3} />
             <Select
-              label="Archetype"
+              label={t('brand.field.archetype')}
               value={draft.archetype}
               onChange={(v) => set('archetype', v)}
               options={ARCHETYPES}
+              noneLabel={t('brand.field.archetype_none')}
             />
           </Section>
 
           <Section label={t('brand.section.audience')}>
-            <Textarea label="Primary audience" value={draft.audience} onChange={(v) => set('audience', v)} placeholder="Who you write to. Be specific." rows={2} />
+            <Textarea label={t('brand.field.audience')} value={draft.audience} onChange={(v) => set('audience', v)} placeholder={t('brand.field.audience_ph')} rows={2} />
             <Field
-              label="Pain points (semicolon-separated)"
+              label={t('brand.field.pain_points')}
               value={draft.audience_pain_points}
               onChange={(v) => set('audience_pain_points', v)}
-              placeholder="e.g. low milk supply; no paid leave; nobody told them what was normal"
+              placeholder={t('brand.field.pain_points_ph')}
             />
             <Field
-              label="Aspirations (semicolon-separated)"
+              label={t('brand.field.aspirations')}
               value={draft.audience_aspirations}
               onChange={(v) => set('audience_aspirations', v)}
-              placeholder="e.g. confident first 6 weeks; sustained breastfeeding through return-to-work"
+              placeholder={t('brand.field.aspirations_ph')}
             />
           </Section>
 
           <Section label={t('brand.section.voice_tone')}>
-            <Textarea label="Tone" value={draft.tone} onChange={(v) => set('tone', v)} placeholder="warm, authoritative, not preachy, lightly self-deprecating" rows={2} />
-            <Textarea label="Voice" value={draft.voice} onChange={(v) => set('voice', v)} placeholder="second person, contractions allowed, no exclamation marks, never address the reader as 'guys'" rows={2} />
-            <Textarea label="Writing guidelines" value={draft.writing_guidelines} onChange={(v) => set('writing_guidelines', v)} placeholder="sentence length cap, paragraph rhythm, opening conventions" rows={4} />
+            <Textarea label={t('brand.field.tone')} value={draft.tone} onChange={(v) => set('tone', v)} placeholder={t('brand.field.tone_ph')} rows={2} />
+            <Textarea label={t('brand.field.voice')} value={draft.voice} onChange={(v) => set('voice', v)} placeholder={t('brand.field.voice_ph')} rows={2} />
+            <Textarea label={t('brand.field.writing_guidelines')} value={draft.writing_guidelines} onChange={(v) => set('writing_guidelines', v)} placeholder={t('brand.field.writing_guidelines_ph')} rows={4} />
           </Section>
 
           <Section label={t('brand.section.vocabulary')}>
-            <Field label="Banned words / phrases (comma-separated)" value={draft.banned_words} onChange={(v) => set('banned_words', v)} placeholder="game-changer, leverage, synergy" />
-            <Field label="Required phrases (separated by |)" value={draft.required_phrases} onChange={(v) => set('required_phrases', v)} placeholder="Trust your body. | We see you." />
-            <Field label="Signature phrases (separated by |)" value={draft.signature_phrases} onChange={(v) => set('signature_phrases', v)} placeholder="optional repeating phrases" />
+            <Field label={t('brand.field.banned')} value={draft.banned_words} onChange={(v) => set('banned_words', v)} placeholder={t('brand.field.banned_ph')} />
+            <Field label={t('brand.field.required')} value={draft.required_phrases} onChange={(v) => set('required_phrases', v)} placeholder={t('brand.field.required_ph')} />
+            <Field label={t('brand.field.signature')} value={draft.signature_phrases} onChange={(v) => set('signature_phrases', v)} placeholder={t('brand.field.signature_ph')} />
           </Section>
 
           <Section label={t('brand.section.seo_geo')}>
-            <Field label="Target keywords (comma-separated)" value={draft.target_keywords} onChange={(v) => set('target_keywords', v)} placeholder="breastfeeding support, donor milk, NICU mom" />
-            <Field label="Default hashtags (space-separated)" value={draft.target_hashtags} onChange={(v) => set('target_hashtags', v)} placeholder="#breastfeeding #latchandlearn #nicumom" />
+            <Field label={t('brand.field.keywords')} value={draft.target_keywords} onChange={(v) => set('target_keywords', v)} placeholder={t('brand.field.keywords_ph')} />
+            <Field label={t('brand.field.hashtags')} value={draft.target_hashtags} onChange={(v) => set('target_hashtags', v)} placeholder={t('brand.field.hashtags_ph')} />
           </Section>
 
           <Section label={t('brand.section.visual')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <ColorField label="Primary" value={draft.primary_color} onChange={(v) => set('primary_color', v)} />
-              <ColorField label="Secondary" value={draft.secondary_color} onChange={(v) => set('secondary_color', v)} />
-              <ColorField label="Accent" value={draft.accent_color} onChange={(v) => set('accent_color', v)} />
+              <ColorField label={t('brand.field.primary')} value={draft.primary_color} onChange={(v) => set('primary_color', v)} />
+              <ColorField label={t('brand.field.secondary')} value={draft.secondary_color} onChange={(v) => set('secondary_color', v)} />
+              <ColorField label={t('brand.field.accent')} value={draft.accent_color} onChange={(v) => set('accent_color', v)} />
             </div>
-            <Field label="Logo URL" value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="https://..." />
+            <Field label={t('brand.field.logo')} value={draft.logo_url} onChange={(v) => set('logo_url', v)} placeholder="https://..." />
           </Section>
         </div>
       )}
@@ -276,11 +277,13 @@ function Select({
   value,
   onChange,
   options,
+  noneLabel = '— none —',
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  noneLabel?: string;
 }) {
   return (
     <label className="block">
@@ -292,7 +295,7 @@ function Select({
       >
         {options.map((o) => (
           <option key={o} value={o} className="bg-zinc-900">
-            {o || '— none —'}
+            {o || noneLabel}
           </option>
         ))}
       </select>
