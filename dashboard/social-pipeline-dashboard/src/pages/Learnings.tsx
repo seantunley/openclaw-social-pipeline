@@ -146,7 +146,7 @@ export default function LearningsPage() {
       ) : learnings.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
           <Brain className="h-10 w-10 text-faint mx-auto mb-3" />
-          <p className="text-sm text-muted">No learnings yet</p>
+          <p className="text-sm text-muted">{t('learnings.empty')}</p>
           <p className="text-xs text-faint mt-1">
             The system learns from draft edits, rejections, and analytics performance
           </p>
@@ -219,13 +219,13 @@ export default function LearningsPage() {
       {/* Add Rule Modal */}
       {showAddModal && (
         <Modal open={showAddModal} onClose={() => setShowAddModal(false)}>
-          <h3 className="text-lg font-semibold text-primaryText mb-4">Add Content Rule</h3>
+          <h3 className="text-lg font-semibold text-primaryText mb-4">{t('learnings.add_modal.title')}</h3>
           <p className="text-xs text-muted mb-4">
             Explicit rules have 100% confidence and never decay. Use for hard brand rules.
           </p>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-muted block mb-1">Category</label>
+              <label className="text-xs text-muted block mb-1">{t('learnings.add_modal.category')}</label>
               <select
                 value={newRule.category}
                 onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
@@ -260,7 +260,7 @@ export default function LearningsPage() {
                 onClick={() => setShowAddModal(false)}
                 className="px-3 py-2 rounded-lg text-xs text-muted hover:text-secondaryText"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => addRuleMutation.mutate()}
@@ -268,7 +268,7 @@ export default function LearningsPage() {
                 className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs disabled:opacity-50 flex items-center gap-1.5"
               >
                 {addRuleMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
-                Save Rule
+                {t('learnings.add_modal.save_rule')}
               </button>
             </div>
           </div>

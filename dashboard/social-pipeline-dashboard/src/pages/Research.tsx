@@ -46,6 +46,7 @@ const PLATFORM_COLORS: Record<string, string> = {
 };
 
 function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const queryClient = useQueryClient();
   const typeBadge = TYPE_BADGES[item.content_type] ?? TYPE_BADGES.research;
@@ -118,13 +119,13 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
           <div className="grid grid-cols-2 gap-4">
             {item.angle && (
               <div>
-                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Angle</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">{t('research.angle')}</p>
                 <p className="text-sm text-secondaryText">{item.angle}</p>
               </div>
             )}
             {item.why_now && (
               <div>
-                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Why Now</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mb-1">{t('research.why_now')}</p>
                 <p className="text-sm text-secondaryText">{item.why_now}</p>
               </div>
             )}
@@ -132,14 +133,14 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
 
           {item.source_summary && (
             <div className="bg-surface-faint border border-zinc-800 rounded-lg p-3">
-              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">What Sources Say</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">{t('research.what_sources_say')}</p>
               <p className="text-sm text-muted">{item.source_summary}</p>
             </div>
           )}
 
           {item.suggested_format && (
             <div>
-              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Suggested Format</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">{t('research.suggested_format')}</p>
               <span className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-secondaryText">
                 <FileText className="w-3 h-3 inline mr-1" />
                 {item.suggested_format.replace(/_/g, ' ')}
@@ -159,7 +160,7 @@ function ResearchRow({ item, onUpdate }: { item: any; onUpdate: () => void }) {
 
           {(item.sources ?? []).length > 0 && (
             <div>
-              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">Sources</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider mb-1">{t('research.sources')}</p>
               <div className="space-y-1">
                 {item.sources.map((s: any, i: number) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
@@ -310,7 +311,7 @@ export default function ResearchPage() {
       ) : displayed.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-800 p-16 text-center">
           <FlaskConical className="h-10 w-10 text-faint mx-auto mb-3" />
-          <p className="text-sm text-muted">No research findings yet</p>
+          <p className="text-sm text-muted">{t('research.empty')}</p>
           <p className="text-xs text-faint mt-1">
             Research outputs from pipeline runs will appear here for review
           </p>

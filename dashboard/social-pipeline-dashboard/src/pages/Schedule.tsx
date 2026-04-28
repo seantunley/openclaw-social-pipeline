@@ -270,6 +270,7 @@ function WeekCell({
 
 /* --- List view --- */
 function ListView({ items }: { items: any[] }) {
+  const t = useT();
   const grouped: Record<string, any[]> = {};
   for (const item of items) {
     const day = dayjs(item.scheduledAt || item.scheduled_for || item.createdAt || item.created_at).format('YYYY-MM-DD');
@@ -294,7 +295,7 @@ function ListView({ items }: { items: any[] }) {
       {sortedDays.length === 0 && (
         <div className="rounded-xl border border-dashed border-zinc-800 p-10 text-center">
           <CalendarIcon className="h-8 w-8 text-faint mx-auto mb-2" />
-          <p className="text-sm text-muted">No scheduled content in this period</p>
+          <p className="text-sm text-muted">{t('schedule.empty')}</p>
         </div>
       )}
     </div>

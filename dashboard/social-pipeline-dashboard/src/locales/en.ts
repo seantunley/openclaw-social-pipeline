@@ -269,11 +269,23 @@ const en = {
     title: 'Content Learnings',
     subtitle: 'Patterns learned from edits, rejections, and analytics — applied to future content',
     add_rule: 'Add Rule',
+    empty: 'No learnings yet',
+    add_modal: {
+      title: 'Add Content Rule',
+      category: 'Category',
+      save_rule: 'Save Rule',
+    },
   },
 
   research: {
     title: 'Research Library',
     subtitle: 'Research findings from pipeline runs — review, approve, and promote to content',
+    empty: 'No research findings yet',
+    angle: 'Angle',
+    why_now: 'Why Now',
+    what_sources_say: 'What Sources Say',
+    suggested_format: 'Suggested Format',
+    sources: 'Sources',
   },
 
   brand: {
@@ -294,6 +306,7 @@ const en = {
   schedule: {
     title: 'Publishing Schedule',
     subtitle: 'Drag and drop to reschedule posts',
+    empty: 'No scheduled content in this period',
   },
 
   media_studio: {

@@ -269,11 +269,23 @@ const fr = {
     title: 'Apprentissages de contenu',
     subtitle: 'Motifs appris à partir des modifications, rejets et analyses — appliqués au contenu futur',
     add_rule: 'Ajouter une règle',
+    empty: 'Aucun apprentissage',
+    add_modal: {
+      title: 'Ajouter une règle de contenu',
+      category: 'Catégorie',
+      save_rule: 'Enregistrer la règle',
+    },
   },
 
   research: {
     title: 'Bibliothèque de recherche',
     subtitle: 'Résultats de recherche des exécutions du pipeline — examiner, approuver et promouvoir au contenu',
+    empty: 'Aucun résultat de recherche',
+    angle: 'Angle',
+    why_now: 'Pourquoi maintenant',
+    what_sources_say: 'Ce que disent les sources',
+    suggested_format: 'Format suggéré',
+    sources: 'Sources',
   },
 
   brand: {
@@ -294,6 +306,7 @@ const fr = {
   schedule: {
     title: 'Calendrier de publication',
     subtitle: 'Glissez-déposez pour replanifier les publications',
+    empty: 'Aucun contenu planifié sur cette période',
   },
 
   media_studio: {
