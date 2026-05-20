@@ -22,6 +22,9 @@ import learningsRoutes from "./routes/learnings.js";
 import brandRoutes from "./routes/brand.js";
 import authRoutes from "./routes/auth.js";
 import importRoutes from "./routes/import.js";
+import socRoutes from "./routes/soc.js";
+import agentRoutes from "./routes/agent.js";
+import schedulesRoutes from "./routes/schedules.js";
 
 // ---------------------------------------------------------------------------
 // Fastify type augmentation
@@ -174,6 +177,9 @@ async function main() {
   await fastify.register(brandRoutes);
   await fastify.register(authRoutes);
   await fastify.register(importRoutes);
+  await fastify.register(socRoutes);
+  await fastify.register(agentRoutes);
+  await fastify.register(schedulesRoutes);
 
   // ── Health check ────────────────────────────────────────────────────────────
   fastify.get("/api/social/health", async () => {
@@ -201,6 +207,36 @@ async function main() {
   });
   process.on("SIGINT", stopScheduler);
   process.on("SIGTERM", stopScheduler);
+
+  // ── Recurring scheduler worker ──────────────────────────────────────────────
+  // Polls social_schedule for due rows and fires the bound action via the
+  // dispatcher. Separate from the smart scheduler above so each can poll
+  // at its own cadence without contention.
+  const { startRecurringScheduler } = await import(
+    "../src/services/scheduler/recurring.js"
+  );
+  const stopRecurringScheduler = startRecurringScheduler(db, {
+    info: (...args: unknown[]) =>
+      fastify.log.info(args[0] as object, args[1] as string),
+    error: (...args: unknown[]) =>
+      fastify.log.error(args[0] as object, args[1] as string),
+    warn: (...args: unknown[]) =>
+      fastify.log.warn(args[0] as object, args[1] as string),
+  });
+  process.on("SIGINT", stopRecurringScheduler);
+  process.on("SIGTERM", stopRecurringScheduler);
+
+  // ── Memory maintenance worker ──────────────────────────────────────────────
+  // Runs extractor + embedder + summarizer + reflector against the agent's
+  // backlog tables. Cheap when there's nothing to do. See the original brief's
+  // "Write path per turn" — cron rollup of the day's messages.
+  const { startMemoryWorker } = await import("../src/services/agent/memory-worker.js");
+  const stopMemoryWorker = startMemoryWorker(db as never, {
+    info: (...args: unknown[]) => fastify.log.info(args[0] as object, args[1] as string),
+    error: (...args: unknown[]) => fastify.log.error(args[0] as object, args[1] as string),
+  });
+  process.on("SIGINT", stopMemoryWorker);
+  process.on("SIGTERM", stopMemoryWorker);
 
   // ── Start ───────────────────────────────────────────────────────────────────
   try {

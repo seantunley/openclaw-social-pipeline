@@ -14,6 +14,10 @@
  */
 
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import dayjs from 'dayjs';
+import 'dayjs/locale/en';
+import 'dayjs/locale/fr';
+import 'dayjs/locale/ru';
 import en from '@/locales/en';
 import fr from '@/locales/fr';
 import ru from '@/locales/ru';
@@ -53,6 +57,8 @@ function readStoredLocale(): LocaleId {
   return FALLBACK;
 }
 
+dayjs.locale(readStoredLocale());
+
 function lookup(tree: Record<string, unknown>, key: string): string | null {
   const path = key.split('.');
   let cur: unknown = tree;
@@ -83,6 +89,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       // ever needed (e.g., tighter line-height for FR labels).
       document.documentElement.lang = locale;
     }
+    dayjs.locale(locale);
   }, [locale]);
 
   const value = useMemo<I18nContextValue>(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -14,11 +14,14 @@ import {
   TrendingUp,
   ShieldCheck,
   BookOpen,
+  Upload,
+  FolderOpen,
 } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 import PipelineTimeline from '@/components/PipelineTimeline';
 import DraftCard from '@/components/DraftCard';
 import MediaCard from '@/components/MediaCard';
+import Modal from '@/components/Modal';
 import PostPreview from '@/components/PostPreview';
 import BeforeAfter from '@/components/BeforeAfter';
 import ScheduleModal from '@/components/ScheduleModal';
@@ -36,6 +39,9 @@ import {
   editDraft,
   rerunRun,
   improveReadability,
+  uploadMedia,
+  attachMedia,
+  fetchMediaLibrary,
 } from '@/lib/api';
 import { formatDate, cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
@@ -186,7 +192,7 @@ export default function RunDetail() {
             <pre className="whitespace-pre-wrap text-sm text-secondaryText bg-surface-soft rounded-lg p-4 border border-border-strong">
               {typeof run.brief === 'string'
                 ? run.brief
-                : JSON.stringify(run.brief, null, 2) || 'No brief generated yet'}
+                : JSON.stringify(run.brief, null, 2) || t('rundetail.no_brief')}
             </pre>
           </div>
         );
@@ -197,7 +203,7 @@ export default function RunDetail() {
             <pre className="whitespace-pre-wrap text-sm text-secondaryText bg-surface-soft rounded-lg p-4 border border-border-strong">
               {typeof run.research === 'string'
                 ? run.research
-                : JSON.stringify(run.research, null, 2) || 'No research data yet'}
+                : JSON.stringify(run.research, null, 2) || t('rundetail.no_research')}
             </pre>
           </div>
         );
@@ -215,11 +221,11 @@ export default function RunDetail() {
         if (psy && typeof psy === 'object' && 'after' in psy) {
           return (
             <BeforeAfter
-              beforeLabel="Pre-psychology draft"
-              afterLabel="After psychology pass"
+              beforeLabel={t('rundetail.psychology.before_label')}
+              afterLabel={t('rundetail.psychology.after_label')}
               before={psy.before}
               after={psy.after}
-              appliedLabel="Principles applied"
+              appliedLabel={t('rundetail.psychology.applied_label')}
               applied={psy.principlesApplied ?? []}
               changes={psy.changes ?? []}
             />
@@ -228,8 +234,8 @@ export default function RunDetail() {
         // Fallback for older runs that have only the enhanced string.
         return (
           <BeforeAfter
-            beforeLabel="Pre-psychology draft"
-            afterLabel="After psychology pass"
+            beforeLabel={t('rundetail.psychology.before_label')}
+            afterLabel={t('rundetail.psychology.after_label')}
             before={null}
             after={typeof psy === 'string' ? psy : null}
           />
@@ -241,7 +247,7 @@ export default function RunDetail() {
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted">{drafts.length} draft variant(s)</p>
+              <p className="text-sm text-muted">{t('rundetail.draft_count', { count: drafts.length })}</p>
               <button
                 onClick={() =>
                   handleAction('regenerateDraft', () => regenerateDraft(id!))
@@ -282,11 +288,11 @@ export default function RunDetail() {
         if (det && (det.before || det.after)) {
           return (
             <BeforeAfter
-              beforeLabel="Pre-humanizer (post-psychology)"
-              afterLabel="After humanizer"
+              beforeLabel={t('rundetail.humanized.before_label')}
+              afterLabel={t('rundetail.humanized.after_label')}
               before={det.before}
               after={det.after}
-              appliedLabel="AI patterns removed"
+              appliedLabel={t('rundetail.humanized.applied_label')}
               applied={det.patternsRemoved ?? []}
               changes={det.changes ?? []}
             />
@@ -294,8 +300,8 @@ export default function RunDetail() {
         }
         return (
           <BeforeAfter
-            beforeLabel="Pre-humanizer (post-psychology)"
-            afterLabel="After humanizer"
+            beforeLabel={t('rundetail.humanized.before_label')}
+            afterLabel={t('rundetail.humanized.after_label')}
             before={null}
             after={typeof run.humanized === 'string' ? run.humanized : null}
           />
@@ -315,8 +321,8 @@ export default function RunDetail() {
                   )}
                   <span className="text-sm font-medium text-secondaryText">
                     {(run.compliance?.passed ?? run.complianceCheck?.passed)
-                      ? 'Compliance Passed'
-                      : 'Compliance Issues Found'}
+                      ? t('rundetail.compliance.passed')
+                      : t('rundetail.compliance.issues_found')}
                   </span>
                 </div>
                 <pre className="whitespace-pre-wrap text-sm text-secondaryText">
@@ -348,6 +354,12 @@ export default function RunDetail() {
             onSelect={(aId) =>
               handleAction('selectMedia', () => selectMedia(id!, aId))
             }
+            onUpload={(file) =>
+              handleAction('uploadMedia', () => uploadMedia(id!, file))
+            }
+            onAttach={(srcId) =>
+              handleAction('attachMedia', () => attachMedia(id!, srcId))
+            }
           />
         );
       }
@@ -363,7 +375,7 @@ export default function RunDetail() {
               )}
               {run.rejectionReason && (
                 <p className="mt-3 text-sm text-red-400">
-                  Reason: {run.rejectionReason}
+                  {t('rundetail.reason_prefix', { reason: run.rejectionReason })}
                 </p>
               )}
             </div>
@@ -650,9 +662,13 @@ interface MediaTabProps {
   actionLoading: string | null;
   onRegenerate: (prompt?: string) => void;
   onSelect: (assetId: string) => void;
+  /** Upload a file from the operator's disk; backend persists + links it. */
+  onUpload: (file: File) => Promise<unknown>;
+  /** Attach an existing media asset (by id) from any past run. */
+  onAttach: (sourceAssetId: string) => Promise<unknown>;
 }
 
-function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSelect }: MediaTabProps) {
+function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSelect, onUpload, onAttach }: MediaTabProps) {
   const t = useT();
   // Pull the prompt from the first hosted asset; that's the most recent
   // generation's editorial prompt. Operator edits are local-only until
@@ -663,6 +679,12 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
   const [showPrompt, setShowPrompt] = useState(false);
   const dirty = prompt.trim() !== seed.trim();
   const busy = actionLoading === 'regenerateMedia';
+  const uploading = actionLoading === 'uploadMedia';
+  const attaching = actionLoading === 'attachMedia';
+  // Library picker (Choose from Media Studio) state.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Keep the editor in sync when the run reloads with new assets (e.g.
   // after a successful regenerate).
@@ -670,10 +692,33 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
     setPrompt(seed);
   }, [seed]);
 
+  // File-picker → upload. Browser File picker resolves before the
+  // network call so we wrap in async to surface errors as a banner
+  // rather than the generic action-loading state.
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    const file = e.target.files?.[0];
+    // Reset the input so picking the same file twice still fires onChange.
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    try {
+      await onUpload(file);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="rounded-lg border border-border-strong bg-surface-soft p-3 space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowPrompt((v) => !v)}
@@ -681,7 +726,27 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
           >
             {showPrompt ? '▾' : '▸'} {t('rundetail.media.prompt_label')} {dirty && <span className="text-amber-400 ml-1">{t('rundetail.media.edited')}</span>}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface-medium px-3 py-1.5 text-xs font-medium text-secondaryText hover:bg-surface-strong disabled:opacity-50"
+              title="Upload an image or video from your computer"
+            >
+              <Upload className={cn('h-3.5 w-3.5', uploading && 'animate-pulse')} />
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              disabled={attaching}
+              className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface-medium px-3 py-1.5 text-xs font-medium text-secondaryText hover:bg-surface-strong disabled:opacity-50"
+              title="Pick from previously-generated media in Media Studio"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+              {attaching ? 'Attaching…' : 'Choose existing'}
+            </button>
             {dirty && (
               <button
                 type="button"
@@ -701,6 +766,11 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
             </button>
           </div>
         </div>
+        {uploadError && (
+          <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            {uploadError}
+          </div>
+        )}
         {showPrompt && (
           <textarea
             value={prompt}
@@ -733,9 +803,118 @@ function MediaTab({ assets, selectedMediaId, actionLoading, onRegenerate, onSele
         <div className="flex flex-col items-center justify-center py-12 text-muted">
           <ImageIcon className="h-10 w-10 mb-3" />
           <p className="text-sm">{t('rundetail.no_media')}</p>
+          <p className="mt-2 text-xs text-faint">
+            Generate, upload, or pick from Media Studio using the buttons above.
+          </p>
         </div>
       )}
+
+      <MediaLibraryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={async (assetId) => {
+          setPickerOpen(false);
+          try {
+            await onAttach(assetId);
+          } catch (err) {
+            setUploadError(err instanceof Error ? err.message : String(err));
+          }
+        }}
+      />
     </div>
+  );
+}
+
+// ─── Media Library picker (Choose existing) ──────────────────────────────
+//
+// Lazy-loads the full library via /api/social/media-assets when opened.
+// Renders a tile grid with platform + run-id badges so the operator can
+// orient on what they're attaching. Picking a tile fires the parent's
+// attach handler and closes the modal.
+interface MediaLibraryPickerProps {
+  open: boolean;
+  onClose: () => void;
+  onPick: (assetId: string) => void | Promise<void>;
+}
+
+function MediaLibraryPicker({ open, onClose, onPick }: MediaLibraryPickerProps) {
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['media-library'],
+    queryFn: () => fetchMediaLibrary(),
+    enabled: open,
+    staleTime: 30_000,
+  });
+  const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
+  const all = data?.media ?? [];
+  const visible = all.filter((m) => {
+    if (!m.url) return false;
+    if (filter === 'all') return true;
+    return m.type === filter;
+  });
+
+  return (
+    <Modal open={open} onClose={onClose} title="Choose existing media" className="max-w-3xl">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex gap-1.5">
+            {(['all', 'image', 'video'] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setFilter(k)}
+                className={cn(
+                  'rounded-md px-2.5 py-1 capitalize transition-colors',
+                  filter === k
+                    ? 'bg-brand-purple/30 text-brand-cyan'
+                    : 'bg-surface-medium text-muted hover:text-secondaryText',
+                )}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-1.5 text-muted hover:text-secondaryText"
+          >
+            <RefreshCw className="h-3 w-3" /> Refresh
+          </button>
+        </div>
+
+        {isLoading ? (
+          <p className="py-10 text-center text-sm text-muted">Loading media…</p>
+        ) : isError ? (
+          <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-3 text-xs text-red-300">
+            Couldn't load media library: {error instanceof Error ? error.message : String(error)}
+          </div>
+        ) : visible.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted">
+            No media in the library yet. Generate or upload some, then come back.
+          </p>
+        ) : (
+          <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto md:grid-cols-3 lg:grid-cols-4">
+            {visible.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => void onPick(m.id)}
+                className="group relative overflow-hidden rounded-lg border border-border-strong bg-surface-medium text-left hover:border-brand-purple/60"
+              >
+                {m.url && (
+                  <img src={m.url} alt={m.prompt ?? ''} className="aspect-square w-full object-cover" />
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 text-[10px] text-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="rounded bg-white/20 px-1.5 py-0.5 uppercase tracking-wide">
+                      {m.platform ?? m.type}
+                    </span>
+                    <span className="opacity-80">{new Date(m.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -752,9 +931,37 @@ interface PreviewPaneProps {
 function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPaneProps) {
   const t = useT();
   const drafts = run.drafts || [];
-  const primary = drafts.find((d: any) => d.selected) ?? drafts[0];
-  const media = run.media || run.mediaAssets || [];
-  const primaryMedia = media.find((m: any) => m.selected) ?? media[0];
+  // Match the operator's "Use this draft" choice first; the API surfaces it
+  // via run.selectedDraftId on the run object. Fall back to drafts[0].
+  const primary =
+    drafts.find((d: any) => d.id === run.selectedDraftId) ??
+    drafts.find((d: any) => d.selected) ??
+    drafts[0];
+  // Same for media. Three resolution paths in order of trust:
+  //   1. run.selectedMediaId — operator clicked "Use this image" in Media tab
+  //   2. m.selected — older inline flag if any code path still sets it
+  //   3. The first asset with a real hosted_url (skip the failed placeholder)
+  //   4. media[0] as last resort
+  const allMedia = run.media || run.mediaAssets || [];
+  // Exclude the failed/placeholder rows from the default-pick so Preview
+  // doesn't land on the "Image not generated" stub when there's a real image.
+  const hostedMedia = allMedia.filter(
+    (m: any) => m.url && m.url.length > 0 && m.status !== 'failed' && m.status !== 'superseded',
+  );
+  const primaryMedia =
+    allMedia.find((m: any) => m.id === run.selectedMediaId) ??
+    allMedia.find((m: any) => m.selected) ??
+    hostedMedia[0] ??
+    allMedia[0];
+
+  // Carousel slide URLs in author order. We sort hosted assets by
+  // carouselIndex (cover = 0). Anything with carouselIndex == null is a
+  // single-image run — we leave the array empty so Preview falls through to
+  // the single-image path.
+  const carouselSlides: string[] = hostedMedia
+    .filter((m: any) => typeof m.carouselIndex === 'number')
+    .sort((a: any, b: any) => a.carouselIndex - b.carouselIndex)
+    .map((m: any) => m.url as string);
 
   const initialContent =
     primary?.content || primary?.finalContent || primary?.humanizedContent || primary?.rawContent || '';
@@ -828,7 +1035,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-wider text-muted">
-          How the post will appear on {run.platform || 'the platform'}
+          {t('rundetail.preview.platform_header', { platform: run.platform || 'the platform' })}
         </p>
         <div className="flex items-center gap-2">
           {!editing && (
@@ -836,17 +1043,17 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
               onClick={startEdit}
               className="flex items-center gap-2 rounded-lg bg-surface-soft border border-border-strong px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-medium transition-colors"
             >
-              <Pencil className="h-3.5 w-3.5" /> Edit
+              <Pencil className="h-3.5 w-3.5" /> {t('rundetail.preview.edit')}
             </button>
           )}
           <button
             onClick={runAgain}
             disabled={busy === 'rerun' || lastResult?.kind === 'rerun'}
             className="flex items-center gap-2 rounded-lg bg-indigo-500/15 border border-indigo-500/30 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Create a new run with the same brief; active learnings will be applied"
+            title={t('rundetail.preview.rerun_title')}
           >
             <Play className={cn('h-3.5 w-3.5', busy === 'rerun' && 'animate-spin')} />
-            {busy === 'rerun' ? 'Starting…' : lastResult?.kind === 'rerun' ? 'Started' : 'Run Again'}
+            {busy === 'rerun' ? t('rundetail.preview.starting') : lastResult?.kind === 'rerun' ? t('rundetail.preview.started') : t('rundetail.preview.run_again')}
           </button>
         </div>
       </div>
@@ -857,7 +1064,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
         <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
           <p className="font-medium">{actionError}</p>
           <p className="mt-1 text-xs text-red-300/70">
-            Open browser console (F12) → Network tab to see the request/response. Or check the engine API logs.
+            {t('rundetail.preview.error_help')}
           </p>
         </div>
       )}
@@ -866,9 +1073,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
         <div className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 p-4 text-sm text-indigo-200">
           <p className="font-medium">{lastResult.data.message}</p>
           <p className="mt-1 text-xs text-indigo-200/80">
-            {lastResult.data.applicable_learnings} active rule
-            {lastResult.data.applicable_learnings === 1 ? '' : 's'} loaded.
-            A new run is processing in the background — check the Runs list in ~30s.
+            {t('rundetail.preview.rerun_started', { count: lastResult.data.applicable_learnings })}
           </p>
         </div>
       )}
@@ -876,7 +1081,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
       {lastResult?.kind === 'edit' && Array.isArray(lastResult.data?.rules_extracted) && (
         <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
           <p className="font-medium text-emerald-300">
-            {lastResult.data.rules_extracted.length} rule(s) saved — future runs will follow them.
+            {t('rundetail.preview.rules_saved', { count: lastResult.data.rules_extracted.length })}
           </p>
           <ul className="mt-2 space-y-1 text-emerald-200/80">
             {lastResult.data.rules_extracted.map((r: { category: string; content: string }, i: number) => (
@@ -894,8 +1099,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
       {editing ? (
         <div className="space-y-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4">
           <p className="text-xs text-indigo-300">
-            Edit the post below. On save, Claude diffs your edit against the model's draft and
-            extracts structured rules — every future run on {run.platform} will follow them.
+            {t('rundetail.preview.edit_helper', { platform: run.platform || 'this platform' })}
           </p>
           <textarea
             value={draftText}
@@ -907,7 +1111,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional: tell the bot WHY you changed this (becomes a stronger rule)"
+            placeholder={t('rundetail.preview.edit_placeholder')}
             className="w-full rounded-lg bg-black/30 border border-border-strong px-3 py-2 text-xs text-secondaryText placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <div className="flex items-center justify-between gap-2">
@@ -917,10 +1121,10 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
               const canSave = textChanged || hasNote;
               return (
                 <p className="text-[11px] text-muted">
-                  {!canSave && 'Edit the text or add a note to enable Save.'}
-                  {canSave && textChanged && hasNote && 'Will save text changes + note as rules.'}
-                  {canSave && textChanged && !hasNote && 'Will diff the edit and extract rules from it.'}
-                  {canSave && !textChanged && hasNote && 'Will save your note as a rule (no text change).'}
+                  {!canSave && t('rundetail.preview.no_changes_hint')}
+                  {canSave && textChanged && hasNote && t('rundetail.preview.will_save_both')}
+                  {canSave && textChanged && !hasNote && t('rundetail.preview.will_diff_extract')}
+                  {canSave && !textChanged && hasNote && t('rundetail.preview.will_save_note')}
                 </p>
               );
             })()}
@@ -950,6 +1154,7 @@ function PreviewPane({ run, runId, onAction, actionLoading, refetch }: PreviewPa
           platform={run.platform || 'generic'}
           content={initialContent}
           mediaUrl={primaryMedia?.url || null}
+          mediaUrls={carouselSlides.length > 1 ? carouselSlides : undefined}
           brandName={run.campaign || 'Your Brand'}
           brandHandle={(run.campaign || 'yourbrand').toLowerCase().replace(/\s+/g, '_')}
         />
@@ -1439,7 +1644,7 @@ function SeoGeoTab({ run }: { run: any }) {
 
   if (!generate && !primary) {
     return (
-      <p className="text-sm text-muted py-8 text-center">SEO/GEO stage hasn't run yet</p>
+      <p className="text-sm text-muted py-8 text-center">{t('rundetail.seogeo.stage_not_run')}</p>
     );
   }
 
@@ -1470,7 +1675,7 @@ function SeoGeoTab({ run }: { run: any }) {
       {/* Sub-scores */}
       {Object.keys(seoDetails).length > 0 && (
         <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
-          <h4 className="text-sm font-semibold text-primaryText mb-3">Sub-scores</h4>
+          <h4 className="text-sm font-semibold text-primaryText mb-3">{t('rundetail.seogeo.sub_scores')}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
             {Object.entries(seoDetails).map(([k, v]) => (
               <div key={k} className="flex items-center justify-between text-xs">
@@ -1487,7 +1692,7 @@ function SeoGeoTab({ run }: { run: any }) {
       {/* EEAT signals */}
       {eeat.length > 0 && (
         <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
-          <h4 className="text-sm font-semibold text-primaryText mb-3">E-E-A-T signals surfaced</h4>
+          <h4 className="text-sm font-semibold text-primaryText mb-3">{t('rundetail.seogeo.eeat_signals')}</h4>
           <ul className="space-y-1.5">
             {eeat.map((s, i) => (
               <li key={i} className="text-xs text-secondaryText flex gap-2">
@@ -1502,7 +1707,7 @@ function SeoGeoTab({ run }: { run: any }) {
       {/* Original SEO/GEO drafted content (pre-psychology / pre-humanize) */}
       {draftedContent && (
         <div className="rounded-xl border border-border-strong bg-surface-soft p-4">
-          <h4 className="text-sm font-semibold text-primaryText mb-2">SEO/GEO draft (pre-psychology)</h4>
+          <h4 className="text-sm font-semibold text-primaryText mb-2">{t('rundetail.seogeo.draft_pre_psychology')}</h4>
           <p className="text-[10px] text-muted mb-3">
             What the SEO/GEO stage produced before psychology and humanizer made their passes.
           </p>

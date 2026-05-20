@@ -22,6 +22,9 @@ import { randomUUID } from 'node:crypto';
 const CODEX_AUTH_PATH =
   process.env.CODEX_AUTH_PATH ?? join(homedir(), '.codex', 'auth.json');
 
+// Identifier sent to OpenAI in the OAuth `originator` parameter. Public.
+const OAUTH_ORIGINATOR = 'openclaw-social-pipeline';
+
 interface OAuthCredentials {
   refresh: string;
   access: string;
@@ -41,6 +44,76 @@ interface Flow {
 
 const FLOWS = new Map<string, Flow>();
 const FLOW_TTL_MS = 10 * 60 * 1000;
+
+// TLS-cert errors surface here when Node/OpenSSL can't validate the chain to
+// auth.openai.com — typically Homebrew Node missing the ca-certificates
+// postinstall step. We detect this *before* starting OAuth so the user sees a
+// fixable error instead of a generic fetch failure mid-flow.
+const TLS_CERT_ERROR_CODES = new Set([
+  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'CERT_HAS_EXPIRED',
+  'DEPTH_ZERO_SELF_SIGNED_CERT',
+  'SELF_SIGNED_CERT_IN_CHAIN',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
+]);
+const TLS_CERT_ERROR_PATTERNS = [
+  /unable to get local issuer certificate/i,
+  /unable to verify the first certificate/i,
+  /self[- ]signed certificate/i,
+  /certificate has expired/i,
+];
+const OPENAI_AUTH_PROBE_URL =
+  'https://auth.openai.com/oauth/authorize?response_type=code&client_id=openclaw-preflight&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email';
+
+async function preflightOpenAIAuth(timeoutMs = 5000): Promise<void> {
+  try {
+    await fetch(OPENAI_AUTH_PROBE_URL, {
+      method: 'GET',
+      redirect: 'manual',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (err) {
+    const root = err && typeof err === 'object' ? (err as Record<string, unknown>) : null;
+    const cause = root?.cause && typeof root.cause === 'object'
+      ? (root.cause as Record<string, unknown>)
+      : null;
+    const code = typeof cause?.code === 'string' ? cause.code : undefined;
+    const message =
+      (typeof cause?.message === 'string' && cause.message) ||
+      (typeof root?.message === 'string' && root.message) ||
+      String(err);
+    const isTlsCert =
+      (code && TLS_CERT_ERROR_CODES.has(code)) ||
+      TLS_CERT_ERROR_PATTERNS.some((pat) => pat.test(message));
+    if (isTlsCert) {
+      throw new Error(
+        `Node cannot validate TLS certificates against auth.openai.com${code ? ` (${code})` : ''}. ` +
+          'Fix: on Homebrew Node, run `brew postinstall ca-certificates && brew postinstall openssl@3`, then retry.',
+      );
+    }
+    throw new Error(
+      `Network preflight to auth.openai.com failed before starting OAuth: ${message}. ` +
+        'Check DNS, firewall, or HTTPS_PROXY/HTTP_PROXY settings.',
+    );
+  }
+}
+
+function rewriteCodexOAuthError(err: unknown): Error {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/unsupported_country_region_territory/i.test(message)) {
+    return new Error(
+      'OpenAI rejected the token exchange for this country/region/network route. ' +
+        'If you use a proxy, set HTTPS_PROXY/HTTP_PROXY/ALL_PROXY for this process and retry.',
+    );
+  }
+  if (/state mismatch|missing authorization code/i.test(message)) {
+    return new Error(
+      `OAuth callback validation failed (${message}). The browser callback was malformed or arrived after the flow was reset — retry sign-in.`,
+    );
+  }
+  return err instanceof Error ? err : new Error(message);
+}
 
 function reapStaleFlows(): void {
   const cutoff = Date.now() - FLOW_TTL_MS;
@@ -79,6 +152,10 @@ async function persistCredsToCodexFile(creds: OAuthCredentials): Promise<void> {
 export async function startCodexLogin(): Promise<{ flowId: string; url: string }> {
   reapStaleFlows();
 
+  // Catch fixable TLS/network issues before we spin up a callback server and
+  // hand a dead URL to the dashboard.
+  await preflightOpenAIAuth();
+
   const flowId = randomUUID();
   const flow: Flow = {
     id: flowId,
@@ -99,18 +176,25 @@ export async function startCodexLogin(): Promise<{ flowId: string; url: string }
   // promise that resolves with credentials once the user completes OAuth.
   void (async () => {
     try {
-      const oauth = (await import('@mariozechner/pi-ai/oauth')) as {
+      const oauth = (await import('@earendil-works/pi-ai/oauth')) as {
         loginOpenAICodex(callbacks: {
           onAuth(info: { url: string; instructions?: string }): void;
           onPrompt(prompt: { message: string }): Promise<string>;
           onProgress?(message: string): void;
+          onManualCodeInput?(): Promise<string>;
+          originator?: string;
         }): Promise<OAuthCredentials>;
       };
 
       const creds = await oauth.loginOpenAICodex({
+        originator: OAUTH_ORIGINATOR,
         onAuth: (info) => {
           flow.url = info.url;
           resolveUrl(info.url);
+        },
+        onProgress: (msg) => {
+          // Surfaced for debugging; visible in API logs alongside flowId.
+          console.log(`[codex-oauth ${flowId}] ${msg}`);
         },
         onPrompt: async () => {
           // We don't expose manual code entry from the dashboard — fail fast
@@ -126,7 +210,7 @@ export async function startCodexLogin(): Promise<{ flowId: string; url: string }
       flow.status = 'completed';
     } catch (err) {
       flow.status = 'failed';
-      flow.error = (err as Error).message;
+      flow.error = rewriteCodexOAuthError(err).message;
       // Make sure we don't hang the URL promise if onAuth was never called.
       if (!flow.url) resolveUrl('');
     }

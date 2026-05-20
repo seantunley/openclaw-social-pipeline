@@ -120,7 +120,7 @@ export default function Campaigns() {
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted">
                   <Play className="h-3 w-3" />
-                  {campaign.runCount ?? 0} runs
+                  {t('campaigns.run_count', { count: campaign.runCount ?? 0 })}
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function Campaigns() {
       <Modal
         open={!!selectedCampaign}
         onClose={() => setSelectedCampaign(null)}
-        title={selectedCampaign?.name || 'Campaign Detail'}
+        title={selectedCampaign?.name || t('campaigns.detail_fallback')}
         className="max-w-2xl"
       >
         {selectedCampaign && (
@@ -233,7 +233,7 @@ export default function Campaigns() {
               <p className="text-sm text-secondaryText">{selectedCampaign.description}</p>
             )}
             <div>
-              <h4 className="text-sm font-medium text-secondaryText mb-2">Recent Runs</h4>
+              <h4 className="text-sm font-medium text-secondaryText mb-2">{t('campaigns.recent_runs')}</h4>
               {(selectedCampaign.runs || []).length > 0 ? (
                 <div className="space-y-2">
                   {selectedCampaign.runs.map((run: any) => (
@@ -256,7 +256,7 @@ export default function Campaigns() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted">No runs for this campaign</p>
+                <p className="text-sm text-muted">{t('campaigns.no_runs')}</p>
               )}
             </div>
           </div>

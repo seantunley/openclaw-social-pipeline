@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyPluginCallback } from "fastify";
 import { eq, and, or, desc, isNull } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { promises as fsp, createReadStream } from "node:fs";
+import * as path from "node:path";
 import {
   socialRun,
   socialRunStage,
@@ -8,6 +10,34 @@ import {
   socialMediaAsset,
   socialLearning,
 } from "../../src/db/schema.js";
+
+// Uploaded media live under <engine-dist>/../uploads/ — alongside the dist/
+// tree so the path survives `npm run build` (which only wipes dist/). The
+// raw-serve handler streams files from here; we mkdir on first use rather
+// than at module load so tests / fresh checkouts don't have a stale dir.
+const UPLOAD_DIR = path.resolve(process.cwd(), "uploads");
+
+async function ensureUploadDir(): Promise<void> {
+  await fsp.mkdir(UPLOAD_DIR, { recursive: true });
+}
+
+// Whitelist of image/video mime → extension so we can name the on-disk
+// file something predictable + serve it back with the correct Content-Type.
+// Anything not on this list rejects at the upload boundary — keeps the
+// folder from filling with arbitrary user content.
+const UPLOAD_MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+};
+
+const EXT_TO_MIME: Record<string, string> = Object.fromEntries(
+  Object.entries(UPLOAD_MIME_TO_EXT).map(([m, e]) => [e, m]),
+);
 
 const draftsRoutes: FastifyPluginCallback = (
   fastify: FastifyInstance,
@@ -374,10 +404,15 @@ const draftsRoutes: FastifyPluginCallback = (
     "/api/social/runs/:id/select-media",
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { asset_id } = request.body as { asset_id: string };
+      // Accept both `assetId` (dashboard convention) and `asset_id`
+      // (engine convention) — the dashboard was sending camelCase against
+      // a snake_case-only server, so every "Use this image" click 400'd
+      // silently. Tolerating both keeps the API forgiving.
+      const body = request.body as { assetId?: string; asset_id?: string };
+      const asset_id = body.assetId || body.asset_id;
 
       if (!asset_id) {
-        return reply.status(400).send({ error: "asset_id is required" });
+        return reply.status(400).send({ error: "assetId is required" });
       }
 
       try {
@@ -770,6 +805,209 @@ Return JSON ONLY (no markdown fences):
       fastify.log.error({ err }, "Failed to list media assets");
       return reply.status(500).send({ error: message });
     }
+  });
+
+  // ── POST /api/social/runs/:id/media/upload ──────────────────────────────────
+  // Operator uploads an image/video from disk + attaches it to this run's
+  // draft as a new media asset. Used when the operator has their own asset
+  // (e.g. a brand-shot they took, a logo, a designed slide) and wants to
+  // use it instead of or alongside a generated one.
+  //
+  // Loud failures:
+  //   - 400 if no file, unsupported mime, missing draft
+  //   - 404 if the run / draft doesn't exist
+  //   - 413 already enforced by @fastify/multipart's body-size limits
+  fastify.post("/api/social/runs/:id/media/upload", async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    // Validate target run + its draft up front so we don't write the file
+    // to disk only to fail at the DB insert.
+    const draft = await fastify.db
+      .select()
+      .from(socialDraft)
+      .where(eq(socialDraft.run_id, id))
+      .orderBy(socialDraft.variant_index)
+      .limit(1);
+    if (draft.length === 0) {
+      return reply.status(404).send({ error: `No draft for run ${id}` });
+    }
+    const targetDraft = draft[0];
+
+    let file: Awaited<ReturnType<typeof request.file>>;
+    try {
+      file = await request.file();
+    } catch (err) {
+      return reply
+        .status(400)
+        .send({ error: `Invalid multipart upload: ${(err as Error).message}` });
+    }
+    if (!file) {
+      return reply.status(400).send({ error: "No file in upload" });
+    }
+
+    const mime = file.mimetype.toLowerCase();
+    const ext = UPLOAD_MIME_TO_EXT[mime];
+    if (!ext) {
+      return reply.status(400).send({
+        error: `Unsupported file type '${mime}'. Allowed: ${Object.keys(UPLOAD_MIME_TO_EXT).join(", ")}.`,
+      });
+    }
+
+    const isVideo = mime.startsWith("video/");
+    const assetId = uuidv4();
+    const filename = `${assetId}.${ext}`;
+    const onDiskPath = path.join(UPLOAD_DIR, filename);
+    const publicUrl = `/api/social/media/raw/${filename}`;
+    const now = new Date().toISOString();
+
+    try {
+      await ensureUploadDir();
+      const buffer = await file.toBuffer();
+      await fsp.writeFile(onDiskPath, buffer);
+    } catch (err) {
+      fastify.log.error({ err, runId: id }, "Failed to persist upload to disk");
+      return reply.status(500).send({
+        error: `Couldn't save the file: ${(err as Error).message}. Check that the engine has write access to ${UPLOAD_DIR}.`,
+      });
+    }
+
+    try {
+      await fastify.db.insert(socialMediaAsset).values({
+        id: assetId,
+        draft_id: targetDraft.id,
+        type: isVideo ? "video" : "image",
+        status: "hosted",
+        prompt: `Operator upload: ${file.filename ?? filename}`,
+        provider: "operator-upload",
+        model: "",
+        source_url: publicUrl,
+        hosted_url: publicUrl,
+        media_mode: isVideo ? "video" : "image",
+        // aspect_ratio is notNull with default '1:1' in schema — we don't
+        // probe the actual image bounds here so the schema default kicks in.
+        carousel_index: null,
+        metadata: JSON.stringify({
+          original_filename: file.filename ?? null,
+          mime_type: mime,
+          uploaded_by: "operator",
+          uploaded_at: now,
+        }),
+      });
+    } catch (err) {
+      // DB insert failed after writing to disk — clean up the orphan file
+      // so we don't accumulate unreferenced uploads.
+      void fsp.unlink(onDiskPath).catch(() => {});
+      fastify.log.error({ err, runId: id }, "Failed to insert uploaded media asset");
+      return reply.status(500).send({
+        error: `Saved file but couldn't link to draft: ${(err as Error).message}`,
+      });
+    }
+
+    return reply.send({
+      ok: true,
+      asset_id: assetId,
+      hosted_url: publicUrl,
+      type: isVideo ? "video" : "image",
+    });
+  });
+
+  // ── POST /api/social/runs/:id/media/attach ──────────────────────────────────
+  // Operator picks an existing media asset (from any past run) in the Media
+  // Studio picker and attaches it to this run's draft. We INSERT a new row
+  // referencing the same hosted_url rather than mutating the source asset,
+  // so the source row stays linked to its original draft for audit trail.
+  fastify.post("/api/social/runs/:id/media/attach", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = (request.body ?? {}) as {
+      sourceAssetId?: string;
+      source_asset_id?: string;
+    };
+    const sourceAssetId = body.sourceAssetId || body.source_asset_id;
+    if (!sourceAssetId) {
+      return reply
+        .status(400)
+        .send({ error: "sourceAssetId (or source_asset_id) is required" });
+    }
+
+    const draft = await fastify.db
+      .select()
+      .from(socialDraft)
+      .where(eq(socialDraft.run_id, id))
+      .orderBy(socialDraft.variant_index)
+      .limit(1);
+    if (draft.length === 0) {
+      return reply.status(404).send({ error: `No draft for run ${id}` });
+    }
+
+    const source = await fastify.db
+      .select()
+      .from(socialMediaAsset)
+      .where(eq(socialMediaAsset.id, sourceAssetId))
+      .limit(1);
+    if (source.length === 0) {
+      return reply
+        .status(404)
+        .send({ error: `Source media asset ${sourceAssetId} not found` });
+    }
+    const src = source[0];
+
+    const newId = uuidv4();
+    const now = new Date().toISOString();
+    let sourceMeta: Record<string, unknown> = {};
+    try {
+      sourceMeta = JSON.parse(src.metadata ?? "{}");
+    } catch {
+      sourceMeta = {};
+    }
+    await fastify.db.insert(socialMediaAsset).values({
+      id: newId,
+      draft_id: draft[0].id,
+      type: src.type,
+      status: "hosted",
+      prompt: src.prompt,
+      provider: src.provider,
+      model: src.model,
+      source_url: src.source_url,
+      hosted_url: src.hosted_url,
+      media_mode: src.media_mode,
+      aspect_ratio: src.aspect_ratio,
+      carousel_index: null,
+      metadata: JSON.stringify({
+        ...sourceMeta,
+        attached_from: sourceAssetId,
+        attached_at: now,
+      }),
+    });
+
+    return reply.send({
+      ok: true,
+      asset_id: newId,
+      hosted_url: src.hosted_url,
+      source_asset_id: sourceAssetId,
+    });
+  });
+
+  // ── GET /api/social/media/raw/:filename ─────────────────────────────────────
+  // Streams the uploaded file from UPLOAD_DIR. Filenames are uuids we
+  // generate on upload, so we don't trust the path coming in — strict
+  // basename match against UPLOAD_DIR rejects any traversal attempt.
+  fastify.get("/api/social/media/raw/:filename", async (request, reply) => {
+    const { filename } = request.params as { filename: string };
+    const base = path.basename(filename);
+    if (base !== filename) {
+      return reply.status(400).send({ error: "Invalid filename" });
+    }
+    const filePath = path.join(UPLOAD_DIR, base);
+    try {
+      await fsp.access(filePath);
+    } catch {
+      return reply.status(404).send({ error: "File not found" });
+    }
+    const ext = base.split(".").pop()?.toLowerCase() ?? "";
+    const mime = EXT_TO_MIME[ext] ?? "application/octet-stream";
+    reply.header("Content-Type", mime);
+    reply.header("Cache-Control", "public, max-age=86400");
+    return reply.send(createReadStream(filePath));
   });
 
   done();

@@ -101,6 +101,37 @@ const runsRoutes: FastifyPluginCallback = (
             }
           })();
 
+          // Pull the latest draft so the list view can show a content
+          // preview without an extra round-trip per row. We don't need the
+          // entire draft; the Approvals card line-clamps to 3 lines anyway.
+          const drafts = await fastify.db
+            .select()
+            .from(socialDraft)
+            .where(eq(socialDraft.run_id, run.id));
+          const draft = drafts[0];
+          const draftContent = draft
+            ? (draft.final_content && draft.final_content.length > 0
+                ? draft.final_content
+                : draft.raw_content) ?? ""
+            : "";
+
+          // First media asset (if any) — Approvals card displays the thumbnail.
+          let mediaThumbnail: string | null = null;
+          if (draft) {
+            const media = await fastify.db
+              .select()
+              .from(socialMediaAsset)
+              .where(eq(socialMediaAsset.draft_id, draft.id));
+            mediaThumbnail = media[0]?.hosted_url ?? null;
+          }
+
+          // Topic comes from the brief inside config_snapshot. Empty when
+          // legacy runs never had a brief.
+          const topic =
+            typeof config.brief?.topic === "string" && config.brief.topic.length > 0
+              ? config.brief.topic
+              : null;
+
           return {
             id: run.id,
             status: run.status,
@@ -108,6 +139,15 @@ const runsRoutes: FastifyPluginCallback = (
             platform: config.platform ?? '—',
             campaign: campaignNameById.get(run.campaign_id) ?? run.campaign_id,
             campaignId: run.campaign_id,
+            // Surface the topic as a top-level field so the dashboard
+            // can show "AI Trends — Mon May 25" instead of digging into
+            // config_snapshot.brief.topic.
+            topic,
+            // Top-level preview of the draft body. Trimmed to 600 chars
+            // so the API response stays small for list views.
+            draftPreview: draftContent ? draftContent.slice(0, 600) : null,
+            draftId: draft?.id ?? null,
+            mediaThumbnail,
             createdAt: run.created_at,
             updatedAt: run.updated_at,
             startedAt: run.started_at,
@@ -487,6 +527,10 @@ const runsRoutes: FastifyPluginCallback = (
           status: m.status,
           prompt: m.prompt,
           aspectRatio: m.aspect_ratio,
+          // Carousel slide ordinal (0 = cover). Null on single-image runs.
+          // Preview pane sorts on this to render slides in the operator's
+          // authored order rather than db insertion order.
+          carouselIndex: m.carousel_index,
           metadata: meta,
         };
       });
@@ -654,6 +698,11 @@ const runsRoutes: FastifyPluginCallback = (
         scheduledAt: config.scheduled_for ?? null,
         errorMessage: run.error_message,
         config_snapshot: config,
+        // Surface the selected-asset id so the MediaCard can highlight
+        // which image is active. Stored on config_snapshot by the
+        // /select-media endpoint. selectedDraftId likewise.
+        selectedMediaId: config.selected_asset_id ?? null,
+        selectedDraftId: config.selected_draft_id ?? null,
         stages: stages.map((s) => ({
           ...s,
           input_data: JSON.parse(s.input_data),

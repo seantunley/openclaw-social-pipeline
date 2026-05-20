@@ -11,7 +11,9 @@
     "clean": "rm -rf dist",
     "start:api": "node --env-file=.env dist/dashboard-api/server.js",
     "start:bot": "node --env-file=.env dist/src/bot/index.js",
-    "rebuild": "npm run build"
+    "rebuild": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "social-media",
@@ -25,25 +27,29 @@
   "author": "Sean Tunley <sean@tunley.co.za>",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.91.1",
-    "@fal-ai/client": "^1.9.5",
-    "@fastify/cors": "^10.0.0",
+    "@anthropic-ai/sdk": "^0.96.0",
+    "@earendil-works/pi-ai": "^0.75.3",
+    "@fal-ai/client": "^1.10.1",
+    "@fastify/cors": "^11.2.0",
     "@fastify/multipart": "^10.0.0",
-    "@mariozechner/pi-ai": "^0.70.2",
     "adm-zip": "^0.5.17",
-    "better-sqlite3": "^12.9.0",
-    "drizzle-orm": "^0.39.0",
+    "better-sqlite3": "^12.10.0",
+    "cron-parser": "^5.5.0",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.0.0",
+    "sqlite-vec": "^0.1.9",
     "telegraf": "^4.16.3",
-    "uuid": "^11.1.0",
-    "zod": "^3.24.0"
+    "uuid": "^11.1.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.10.0",
+    "@types/node": "^25.9.0",
     "@types/uuid": "^10.0.0",
-    "drizzle-kit": "^0.30.0",
-    "typescript": "^5.7.0"
+    "@vitest/expect": "^4.1.6",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
   }
 }

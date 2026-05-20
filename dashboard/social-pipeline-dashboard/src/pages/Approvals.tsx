@@ -53,20 +53,25 @@ export default function Approvals() {
               key={run.id || run._id}
               run={{
                 id: run.id || run._id,
+                topic: run.topic || run.config_snapshot?.brief?.topic,
                 platform: run.platform,
                 campaign: run.campaign || run.campaignName,
                 status: run.status,
                 content:
+                  run.draftPreview ||
                   run.humanized ||
                   run.humanizedContent ||
                   (run.drafts?.[0]?.content
-                    ? run.drafts[0].content.slice(0, 200)
+                    ? run.drafts[0].content.slice(0, 600)
                     : undefined),
                 mediaThumbnail:
+                  run.mediaThumbnail ||
                   run.media?.[0]?.thumbnailUrl ||
                   run.mediaAssets?.[0]?.thumbnailUrl,
                 createdAt: run.createdAt,
+                scheduledAt: run.scheduledAt,
               }}
+              onOpen={(id) => navigate(`/runs/${id}`)}
               onApprove={(id, notes) =>
                 approve.mutate({ id, data: { notes } })
               }

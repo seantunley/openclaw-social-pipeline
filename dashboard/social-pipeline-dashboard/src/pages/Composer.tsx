@@ -348,7 +348,7 @@ interface ComposerPanelProps {
   setBodyFor: (id: PlatformId, body: string) => void;
   resetOverride: (id: PlatformId) => void;
   overrides: Partial<Record<PlatformId, PerPlatformState>>;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   attachments: File[];
   removeAttachment: (idx: number) => void;
   onAttachFile: (

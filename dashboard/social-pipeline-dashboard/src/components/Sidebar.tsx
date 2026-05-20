@@ -16,6 +16,7 @@ import {
   Brain,
   ImageIcon,
   CalendarDays,
+  Clock,
   Inbox,
   BarChart3,
   Settings as SettingsIcon,
@@ -25,6 +26,7 @@ import {
   ChevronDown,
   Sun,
   Moon,
+  Shield,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -60,6 +62,7 @@ const GROUPS: NavGroup[] = [
       { to: '/approvals', icon: CheckSquare, labelKey: 'nav.approvals' },
       { to: '/inbox', icon: Inbox, labelKey: 'nav.inbox' },
       { to: '/schedule', icon: CalendarDays, labelKey: 'nav.schedule' },
+      { to: '/schedules', icon: Clock, labelKey: 'nav.schedules' },
       { to: '/analytics', icon: BarChart3, labelKey: 'nav.analytics' },
     ],
   },
@@ -83,6 +86,7 @@ const GROUPS: NavGroup[] = [
 ];
 
 const UTILITY_ITEMS: NavItem[] = [
+  { to: '/operations', icon: Shield, labelKey: 'nav.operations' },
   { to: '/settings', icon: SettingsIcon, labelKey: 'nav.settings' },
   { to: '/trash', icon: Trash, labelKey: 'nav.trash' },
 ];

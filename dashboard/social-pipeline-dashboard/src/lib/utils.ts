@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format, formatDistanceToNow } from 'date-fns';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -8,14 +11,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(date: string | Date | undefined): string {
   if (!date) return '—';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'MMM d, yyyy HH:mm');
+  return dayjs(date).format('MMM D, YYYY HH:mm');
 }
 
 export function formatRelative(date: string | Date | undefined): string {
   if (!date) return '—';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return formatDistanceToNow(d, { addSuffix: true });
+  return dayjs(date).fromNow();
 }
 
 export function formatStatus(status: string): string {

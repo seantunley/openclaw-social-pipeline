@@ -63,7 +63,7 @@ function resolveAspectRatio(platform: string, format?: string): string {
  * slide rather than one image per post. Currently the only fan-out format
  * is carousel; reels/stories/landscape are still single-image.
  */
-function isCarouselFormat(format: string | undefined): boolean {
+export function isCarouselFormat(format: string | undefined): boolean {
   if (!format) return false;
   return format === 'instagram_carousel' || format.endsWith('_carousel') || format === 'carousel';
 }
@@ -261,7 +261,7 @@ function buildVideoModelInput(
 // Carousel slide parser
 // ---------------------------------------------------------------------------
 
-function parseSlides(body: string): string[] {
+export function parseSlides(body: string): string[] {
   const bySlide = body.split(/\n(?=##?\s*Slide\s+\d+|\*\*Slide\s+\d+\*\*)/i);
   if (bySlide.length > 1) return bySlide.map((s) => s.trim()).filter(Boolean);
   const byDivider = body.split(/\n---\n/);
@@ -287,6 +287,14 @@ export interface ImageGenerateParams {
    * control should disable carousel.
    */
   customPrompt?: string;
+  /**
+   * Carousel only. When true, the per-slide prompt is suffixed with an
+   * instruction asking nano-banana-2 to render the slide's text into the
+   * image. The actual instruction string is built by the orchestrator
+   * (services/media/index.ts:buildTextOverlayInstruction) so fal and
+   * OpenAI share the same overlay grammar.
+   */
+  textOverlay?: boolean;
 }
 
 export interface FalImageResult {
@@ -317,6 +325,12 @@ export async function generateImageFal(params: ImageGenerateParams): Promise<Fal
     const slides = parseSlides(params.body).slice(0, 8);
     console.log(`[fal] Generating ${slides.length} carousel images for:`, params.title);
 
+    // Lazily import the orchestrator helper to avoid a circular dep at
+    // module load (services/media/index.ts already imports fal.service).
+    const { buildTextOverlayInstruction } = params.textOverlay
+      ? await import('./index.js')
+      : { buildTextOverlayInstruction: undefined };
+
     const results = await Promise.all(
       slides.map(async (slideText, i) => {
         const rawPrompt = params.customPrompt
@@ -326,7 +340,10 @@ export async function generateImageFal(params: ImageGenerateParams): Promise<Fal
               slideText,
               params.platform,
             );
-        const prompt = `${rawPrompt}. ${IMAGE_QUALITY_SUFFIX}`;
+        const overlay = buildTextOverlayInstruction
+          ? buildTextOverlayInstruction(slideText)
+          : '';
+        const prompt = `${rawPrompt}. ${IMAGE_QUALITY_SUFFIX}${overlay}`;
 
         const result = (await withTimeout(
           fal.subscribe('fal-ai/nano-banana-2', {

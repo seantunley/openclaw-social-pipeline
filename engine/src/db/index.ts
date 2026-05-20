@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
+import * as sqliteVec from "sqlite-vec";
 import * as schema from "./schema.js";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -303,7 +304,386 @@ const CREATE_TABLES_SQL = `
 
   CREATE INDEX IF NOT EXISTS idx_imported_post_batch ON social_imported_post(batch_id);
   CREATE INDEX IF NOT EXISTS idx_imported_post_platform ON social_imported_post(platform);
+
+  -- =========================================================================
+  -- Agent tables (memory + skills + profile)
+  -- =========================================================================
+
+  CREATE TABLE IF NOT EXISTS agent_profile (
+    id TEXT PRIMARY KEY DEFAULT 'default',
+    name TEXT NOT NULL DEFAULT 'Agent',
+    system_prompt TEXT NOT NULL DEFAULT '',
+    default_model TEXT NOT NULL DEFAULT 'anthropic/claude-opus-4-7',
+    default_temperature REAL NOT NULL DEFAULT 0.7,
+    max_steps INTEGER NOT NULL DEFAULT 10,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  -- Seed the singleton row exactly once.
+  INSERT OR IGNORE INTO agent_profile (id, name, system_prompt)
+  VALUES ('default', 'Agent', 'You are a helpful agent assisting a single operator with their social media pipeline.');
+
+  CREATE TABLE IF NOT EXISTS agent_conversation (
+    id TEXT PRIMARY KEY,
+    surface TEXT NOT NULL,
+    surface_ref TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    archived_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_conv_surface ON agent_conversation(surface, surface_ref);
+  CREATE INDEX IF NOT EXISTS idx_agent_conv_updated ON agent_conversation(updated_at);
+
+  CREATE TABLE IF NOT EXISTS agent_message (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL REFERENCES agent_conversation(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    tool_calls TEXT NOT NULL DEFAULT '[]',
+    tool_call_id TEXT,
+    tool_name TEXT,
+    tool_result TEXT NOT NULL DEFAULT '{}',
+    extracted_at TEXT,
+    embedded_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_msg_conv ON agent_message(conversation_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_agent_msg_role ON agent_message(role);
+  CREATE INDEX IF NOT EXISTS idx_agent_msg_extracted ON agent_message(extracted_at);
+  CREATE INDEX IF NOT EXISTS idx_agent_msg_embedded ON agent_message(embedded_at);
+
+  CREATE TABLE IF NOT EXISTS agent_fact (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_message_id TEXT NOT NULL REFERENCES agent_message(id) ON DELETE CASCADE,
+    extractor_model TEXT NOT NULL DEFAULT '',
+    confidence REAL NOT NULL DEFAULT 0.5,
+    reinforcement_count INTEGER NOT NULL DEFAULT 1,
+    last_seen_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    last_validated_at TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    superseded_by_message_id TEXT,
+    tags TEXT NOT NULL DEFAULT '[]',
+    embedded_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_fact_type ON agent_fact(type);
+  CREATE INDEX IF NOT EXISTS idx_agent_fact_subject ON agent_fact(subject);
+  CREATE INDEX IF NOT EXISTS idx_agent_fact_active ON agent_fact(active);
+  CREATE INDEX IF NOT EXISTS idx_agent_fact_confidence ON agent_fact(confidence);
+  CREATE INDEX IF NOT EXISTS idx_agent_fact_embedded ON agent_fact(embedded_at);
+
+  CREATE TABLE IF NOT EXISTS user_preference (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    set_explicitly INTEGER NOT NULL DEFAULT 1,
+    set_via_message_id TEXT REFERENCES agent_message(id) ON DELETE SET NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_user_pref_active ON user_preference(active);
+
+  CREATE TABLE IF NOT EXISTS conversation_summary (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL REFERENCES agent_conversation(id) ON DELETE CASCADE,
+    period TEXT NOT NULL,
+    start_message_id TEXT,
+    end_message_id TEXT,
+    bucket_date TEXT,
+    summary_text TEXT NOT NULL,
+    summarizer_model TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_conv_summary_conv ON conversation_summary(conversation_id, period);
+  CREATE INDEX IF NOT EXISTS idx_conv_summary_bucket ON conversation_summary(bucket_date);
+
+  CREATE TABLE IF NOT EXISTS agent_lesson (
+    id TEXT PRIMARY KEY,
+    content TEXT NOT NULL,
+    source_conversation_id TEXT REFERENCES agent_conversation(id) ON DELETE SET NULL,
+    confidence REAL NOT NULL DEFAULT 0.6,
+    reinforcement_count INTEGER NOT NULL DEFAULT 1,
+    active INTEGER NOT NULL DEFAULT 1,
+    tags TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_lesson_active ON agent_lesson(active);
+  CREATE INDEX IF NOT EXISTS idx_agent_lesson_confidence ON agent_lesson(confidence);
+
+  CREATE TABLE IF NOT EXISTS agent_skill (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    version TEXT NOT NULL DEFAULT '0.0.0',
+    source_type TEXT NOT NULL,
+    source_url TEXT NOT NULL DEFAULT '',
+    checksum_sha256 TEXT NOT NULL,
+    manifest_json TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'registered',
+    approved_at TEXT,
+    approved_by TEXT,
+    revoked_at TEXT,
+    revoked_reason TEXT,
+    last_verified_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_status ON agent_skill(status);
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_name ON agent_skill(name);
+
+  CREATE TABLE IF NOT EXISTS agent_skill_tool (
+    id TEXT PRIMARY KEY,
+    skill_id TEXT NOT NULL REFERENCES agent_skill(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    input_schema_json TEXT NOT NULL DEFAULT '{}',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_tool_skill ON agent_skill_tool(skill_id);
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_tool_name ON agent_skill_tool(name);
+
+  CREATE TABLE IF NOT EXISTS agent_skill_audit (
+    id TEXT PRIMARY KEY,
+    skill_id TEXT NOT NULL REFERENCES agent_skill(id) ON DELETE CASCADE,
+    event TEXT NOT NULL,
+    actor TEXT NOT NULL DEFAULT 'operator',
+    note TEXT NOT NULL DEFAULT '',
+    expected_checksum TEXT,
+    actual_checksum TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_audit_skill ON agent_skill_audit(skill_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_agent_skill_audit_event ON agent_skill_audit(event);
+
+  -- =========================================================================
+  -- Agent defense (SOC telemetry)
+  -- =========================================================================
+
+  CREATE TABLE IF NOT EXISTS security_event (
+    id TEXT PRIMARY KEY,
+    input_source TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    verdict TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'low',
+    risk_score REAL NOT NULL DEFAULT 0,
+    attack_categories TEXT NOT NULL DEFAULT '[]',
+    reason TEXT NOT NULL DEFAULT '',
+    evidence TEXT NOT NULL DEFAULT '',
+    input_hash TEXT NOT NULL DEFAULT '',
+    conversation_id TEXT,
+    message_id TEXT,
+    layer1_detections TEXT NOT NULL DEFAULT '[]',
+    layer2_verdict TEXT,
+    layer2_score REAL,
+    layer2_categories TEXT,
+    layer2_reasoning TEXT,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    full_input TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sec_event_created ON security_event(created_at);
+  CREATE INDEX IF NOT EXISTS idx_sec_event_verdict ON security_event(verdict);
+  CREATE INDEX IF NOT EXISTS idx_sec_event_severity ON security_event(severity);
+  CREATE INDEX IF NOT EXISTS idx_sec_event_source ON security_event(input_source);
+  CREATE INDEX IF NOT EXISTS idx_sec_event_hash ON security_event(input_hash);
+
+  CREATE TABLE IF NOT EXISTS llm_call_log (
+    id TEXT PRIMARY KEY,
+    caller TEXT NOT NULL,
+    model TEXT NOT NULL,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    cost_usd REAL NOT NULL DEFAULT 0,
+    prompt_hash TEXT NOT NULL,
+    cached_response INTEGER NOT NULL DEFAULT 0,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_llm_log_created ON llm_call_log(created_at);
+  CREATE INDEX IF NOT EXISTS idx_llm_log_caller ON llm_call_log(caller);
+  CREATE INDEX IF NOT EXISTS idx_llm_log_hash ON llm_call_log(prompt_hash);
+
+  CREATE TABLE IF NOT EXISTS spend_window (
+    id TEXT PRIMARY KEY,
+    caller TEXT NOT NULL,
+    window_start TEXT NOT NULL,
+    window_seconds INTEGER NOT NULL DEFAULT 3600,
+    total_cost_usd REAL NOT NULL DEFAULT 0,
+    call_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_spend_window_caller ON spend_window(caller, window_start);
+
+  -- =========================================================================
+  -- SOC operator-console state
+  -- =========================================================================
+
+  CREATE TABLE IF NOT EXISTS agent_runtime_state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_by TEXT NOT NULL DEFAULT 'operator'
+  );
+
+  CREATE TABLE IF NOT EXISTS banned_input_hash (
+    hash TEXT PRIMARY KEY,
+    reason TEXT NOT NULL DEFAULT '',
+    created_by TEXT NOT NULL DEFAULT 'operator',
+    expires_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_banned_hash_expires ON banned_input_hash(expires_at);
+
+  CREATE TABLE IF NOT EXISTS blocked_category (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    blocked_until TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    created_by TEXT NOT NULL DEFAULT 'operator',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_blocked_category_until ON blocked_category(category, blocked_until);
+
+  CREATE TABLE IF NOT EXISTS security_event_review (
+    id TEXT PRIMARY KEY,
+    event_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    new_severity TEXT,
+    note TEXT NOT NULL DEFAULT '',
+    reviewer TEXT NOT NULL DEFAULT 'operator',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sec_review_event ON security_event_review(event_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_sec_review_action ON security_event_review(action);
+
+  CREATE TABLE IF NOT EXISTS social_schedule (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active',
+    cadence_kind TEXT NOT NULL,
+    cadence_payload TEXT NOT NULL,
+    cadence_source TEXT NOT NULL DEFAULT '',
+    action_kind TEXT NOT NULL,
+    action_payload TEXT NOT NULL,
+    next_fire_at TEXT NOT NULL,
+    last_fire_at TEXT,
+    last_fire_status TEXT,
+    last_fire_message TEXT,
+    fire_count INTEGER NOT NULL DEFAULT 0,
+    notify_chat INTEGER NOT NULL DEFAULT 1,
+    notify_telegram INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT NOT NULL DEFAULT 'operator',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_schedule_status ON social_schedule(status);
+  CREATE INDEX IF NOT EXISTS idx_schedule_next_fire ON social_schedule(next_fire_at);
+  CREATE INDEX IF NOT EXISTS idx_schedule_action ON social_schedule(action_kind);
+
+  CREATE TABLE IF NOT EXISTS social_schedule_fire (
+    id TEXT PRIMARY KEY,
+    schedule_id TEXT NOT NULL REFERENCES social_schedule(id) ON DELETE CASCADE,
+    fired_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    run_id TEXT,
+    result_payload TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_schedule_fire_schedule ON social_schedule_fire(schedule_id, fired_at);
+  CREATE INDEX IF NOT EXISTS idx_schedule_fire_status ON social_schedule_fire(status);
 `;
+
+// Separate from the main CREATE_TABLES_SQL because virtual tables (FTS5 + vec0)
+// must be created after the extension is loaded, and FTS triggers need the
+// table they reference to already exist. Applied unconditionally inside initDb()
+// after the base CREATE runs.
+const CREATE_FTS_AND_TRIGGERS_SQL = `
+  -- FTS5 mirrors. Contentless mode (content=''): we manage the index manually
+  -- via triggers below. Using rowid (auto-INTEGER on every SQLite table) as
+  -- the join key — agent_message.id is TEXT so we keep both around.
+  CREATE VIRTUAL TABLE IF NOT EXISTS agent_message_fts USING fts5(
+    content,
+    content='agent_message',
+    content_rowid='rowid',
+    tokenize='porter unicode61'
+  );
+
+  CREATE VIRTUAL TABLE IF NOT EXISTS agent_fact_fts USING fts5(
+    content,
+    content='agent_fact',
+    content_rowid='rowid',
+    tokenize='porter unicode61'
+  );
+
+  -- Sync triggers so FTS stays consistent without us thinking about it.
+  CREATE TRIGGER IF NOT EXISTS agent_message_fts_ai AFTER INSERT ON agent_message BEGIN
+    INSERT INTO agent_message_fts(rowid, content) VALUES (new.rowid, new.content);
+  END;
+  CREATE TRIGGER IF NOT EXISTS agent_message_fts_ad AFTER DELETE ON agent_message BEGIN
+    INSERT INTO agent_message_fts(agent_message_fts, rowid, content) VALUES('delete', old.rowid, old.content);
+  END;
+  CREATE TRIGGER IF NOT EXISTS agent_message_fts_au AFTER UPDATE ON agent_message BEGIN
+    INSERT INTO agent_message_fts(agent_message_fts, rowid, content) VALUES('delete', old.rowid, old.content);
+    INSERT INTO agent_message_fts(rowid, content) VALUES (new.rowid, new.content);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS agent_fact_fts_ai AFTER INSERT ON agent_fact BEGIN
+    INSERT INTO agent_fact_fts(rowid, content) VALUES (new.rowid, new.content);
+  END;
+  CREATE TRIGGER IF NOT EXISTS agent_fact_fts_ad AFTER DELETE ON agent_fact BEGIN
+    INSERT INTO agent_fact_fts(agent_fact_fts, rowid, content) VALUES('delete', old.rowid, old.content);
+  END;
+  CREATE TRIGGER IF NOT EXISTS agent_fact_fts_au AFTER UPDATE ON agent_fact BEGIN
+    INSERT INTO agent_fact_fts(agent_fact_fts, rowid, content) VALUES('delete', old.rowid, old.content);
+    INSERT INTO agent_fact_fts(rowid, content) VALUES (new.rowid, new.content);
+  END;
+`;
+
+// sqlite-vec virtual tables. Dimension is configurable via AGENT_EMBED_DIM
+// (default 1536, matching OpenAI text-embedding-3-small). vec0 doesn't allow
+// dynamic dims after creation — change AGENT_EMBED_DIM only on a fresh DB
+// or migrate by exporting/re-importing embeddings.
+function vecTablesSql(dim: number): string {
+  return `
+    CREATE VIRTUAL TABLE IF NOT EXISTS agent_message_vec USING vec0(
+      message_id TEXT PRIMARY KEY,
+      embedding FLOAT[${dim}]
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS agent_fact_vec USING vec0(
+      fact_id TEXT PRIMARY KEY,
+      embedding FLOAT[${dim}]
+    );
+  `;
+}
 
 // ---------------------------------------------------------------------------
 // Database initialization
@@ -338,6 +718,19 @@ export function initDb(options: InitDbOptions = {}): ReturnType<typeof drizzle<t
   // Open SQLite connection
   _sqlite = new Database(dbPath);
 
+  // Load sqlite-vec extension. Required before any vec0 virtual table runs.
+  // If the extension fails to load we surface that clearly — agent memory
+  // vector recall depends on it. See [feedback_no_silent_failure.md].
+  try {
+    sqliteVec.load(_sqlite);
+  } catch (err) {
+    throw new Error(
+      `Failed to load sqlite-vec extension: ${(err as Error).message}. ` +
+        `Agent memory vector recall will not work. Reinstall with \`npm i sqlite-vec\` ` +
+        `or set AGENT_DISABLE_VECTOR=1 to skip (FTS-only memory remains functional).`,
+    );
+  }
+
   // Performance pragmas
   if (walMode) {
     _sqlite.pragma("journal_mode = WAL");
@@ -350,6 +743,18 @@ export function initDb(options: InitDbOptions = {}): ReturnType<typeof drizzle<t
 
   // Run table creation (idempotent)
   _sqlite.exec(CREATE_TABLES_SQL);
+
+  // FTS5 mirrors + sync triggers. Must be applied AFTER the base tables exist
+  // because triggers reference them. Idempotent via IF NOT EXISTS.
+  _sqlite.exec(CREATE_FTS_AND_TRIGGERS_SQL);
+
+  // sqlite-vec virtual tables for semantic recall. Dimension is fixed at
+  // creation time — change AGENT_EMBED_DIM only against a fresh DB.
+  const embedDim = Number(process.env.AGENT_EMBED_DIM ?? 1536);
+  if (!Number.isFinite(embedDim) || embedDim < 32 || embedDim > 4096) {
+    throw new Error(`AGENT_EMBED_DIM must be 32..4096, got: ${process.env.AGENT_EMBED_DIM}`);
+  }
+  _sqlite.exec(vecTablesSql(embedDim));
 
   // Idempotent column migrations for fields added after the initial CREATE.
   // SQLite doesn't have `ALTER TABLE ADD COLUMN IF NOT EXISTS`, so we probe
@@ -373,6 +778,10 @@ export function initDb(options: InitDbOptions = {}): ReturnType<typeof drizzle<t
   _sqlite.exec(
     `CREATE INDEX IF NOT EXISTS idx_run_scheduled ON social_run(scheduled_at)`,
   );
+  // SOC: store the full offending input alongside the truncated evidence so
+  // operators can replay a blocked attack through the layers. Capped to ~8KB
+  // at write time in agent-defense/index.ts.
+  ensureColumn("security_event", "full_input", "TEXT NOT NULL DEFAULT ''");
 
   // Create Drizzle instance
   _db = drizzle(_sqlite, { schema });

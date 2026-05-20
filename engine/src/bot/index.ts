@@ -25,6 +25,7 @@ import {
 import { createPostizAdapter } from '../services/postiz/index.js';
 import { runBotPipeline } from './pipeline.js';
 import { escapeMd, formatApprovalCard } from './format.js';
+import { chat as agentChat } from '../services/agent/runtime.js';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -83,13 +84,13 @@ bot.use(async (ctx, next) => {
 
 bot.start((ctx) =>
   ctx.reply(
-    'Social pipeline ready. Send a topic and I will research, draft, optimize for SEO+GEO, generate an image, and ask you to approve before publishing.\n\nCommands: /topic <text>, /runs, /help',
+    'Ready. Default is chat — send any message and the agent (memory + defense) responds. Use /topic <text> to run the pipeline.\n\nCommands: /chat <text>, /topic <text>, /runs, /help',
   ),
 );
 
 bot.help((ctx) =>
   ctx.reply(
-    'Send a topic as a message, or use /topic <text>.\nThe pipeline: research → SEO+GEO draft → humanize → image → your approval → Postiz publish.\nUse /runs to see recent activity.',
+    'Plain messages talk to the agent (memory + Layer 1+2 defense).\n/chat <text>  — explicit agent chat.\n/topic <text> — full pipeline: research → SEO+GEO draft → humanize → image → approval → publish.\n/runs         — recent pipeline runs.',
   ),
 );
 
@@ -123,11 +124,23 @@ bot.command('topic', async (ctx) => {
   await runFlow(ctx, text);
 });
 
-// Plain message handler — treat any text as a topic.
+// /chat <text> — talk to the agent (memory + defense + skills). Distinct
+// from /topic which launches the full pipeline.
+bot.command('chat', async (ctx) => {
+  const text = ctx.message.text.replace(/^\/chat(@\S+)?\s*/, '').trim();
+  if (!text) {
+    await ctx.reply('Usage: /chat <message>');
+    return;
+  }
+  await runAgentTurn(ctx, text);
+});
+
+// Plain message handler. Default route: agent chat (memory + defense). To
+// launch the full pipeline, use /topic explicitly.
 bot.on('text', async (ctx) => {
   const text = ctx.message.text.trim();
   if (text.startsWith('/')) return; // unknown command
-  await runFlow(ctx, text);
+  await runAgentTurn(ctx, text);
 });
 
 // ---------------------------------------------------------------------------
@@ -196,6 +209,54 @@ async function runFlow(ctx: Context, topic: string) {
   } catch (err) {
     const message = (err as Error).message;
     await updateStatus(`❌ Failed: ${message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Agent chat flow — routes through services/agent/runtime.chat()
+// ---------------------------------------------------------------------------
+
+async function runAgentTurn(ctx: Context, userMessage: string) {
+  const surfaceRef = String(ctx.chat?.id ?? ctx.from?.id ?? 'unknown');
+  try {
+    const result = await agentChat({
+      userMessage,
+      surface: 'telegram',
+      surfaceRef,
+    });
+
+    if (result.status === 'blocked') {
+      await ctx.reply(`🛡️ ${result.reply}`);
+      return;
+    }
+    if (result.status === 'killed') {
+      await ctx.reply(`⏸️ ${result.reply}`);
+      return;
+    }
+    if (result.status === 'llm_failed') {
+      await ctx.reply(`❌ ${result.reply}`);
+      return;
+    }
+
+    // Telegram bodies are capped at 4096 chars; split if needed.
+    // Sign the reply with the agent's name (per the original brief —
+    // "Telegram replies sign as '— {name}'").
+    const body = result.reply || '(empty reply)';
+    const signed = body + `\n\n— ${result.agentName}`;
+    for (let i = 0; i < signed.length; i += 3800) {
+      await ctx.reply(signed.slice(i, i + 3800));
+    }
+
+    // If the agent used any tools, surface a short trace so the operator
+    // can see what it did (parity with the dashboard's collapsible tool blocks).
+    if (result.toolCalls.length > 0) {
+      const trace = result.toolCalls
+        .map((t, i) => `  ${i + 1}. ${t.name} (${t.durationMs}ms)`)
+        .join('\n');
+      await ctx.reply(`🛠 Tools used:\n${trace}`);
+    }
+  } catch (err) {
+    await ctx.reply(`❌ Agent error: ${(err as Error).message}`);
   }
 }
 

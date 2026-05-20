@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn, formatDate } from '@/lib/utils';
-import { CheckCircle2, XCircle, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Image as ImageIcon, ExternalLink, Calendar } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import Modal from './Modal';
 import { useT } from '@/lib/i18n';
@@ -8,13 +8,16 @@ import { useT } from '@/lib/i18n';
 interface ApprovalCardProps {
   run: {
     id: string;
+    topic?: string;
     platform?: string;
     campaign?: string;
     status: string;
     content?: string;
     mediaThumbnail?: string;
     createdAt?: string;
+    scheduledAt?: string | null;
   };
+  onOpen?: (id: string) => void;
   onApprove: (id: string, notes?: string) => void;
   onReject: (id: string, reason: string) => void;
   onRevise: (id: string, notes: string) => void;

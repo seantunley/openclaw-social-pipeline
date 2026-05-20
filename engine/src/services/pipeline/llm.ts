@@ -18,11 +18,60 @@
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
+import { getCallGovernor } from '../agent-defense/call-governor.js';
 
 export interface LlmOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  /**
+   * Identifier of the engine subsystem making the call. Used by the call
+   * governor for per-caller spend/volume caps and audit attribution. Defaults
+   * to 'pipeline.llm' when omitted — pipeline stages should pass a more
+   * specific value (e.g., 'pipeline.research', 'pipeline.draft').
+   */
+  caller?: string;
+}
+
+/**
+ * Thrown when the call governor refuses a call (spend cap, volume cap, or
+ * lifetime cap exhausted). Distinct from provider errors: all providers
+ * share one caller bucket, so falling through to the next provider would
+ * hit the same cap. The chain code short-circuits on this error.
+ */
+export class CallGovernorBlocked extends Error {
+  reason: string;
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'CallGovernorBlocked';
+    this.reason = reason;
+  }
+}
+
+/**
+ * Wrap an upstream LLM call in the governor: precheck spend/volume caps,
+ * serve from dedupe cache when possible, record the audit row, bump the
+ * rolling window. Throws CallGovernorBlocked when the cap is hit; provider
+ * errors from `run` propagate untouched.
+ */
+async function withGovernor<T>(args: {
+  caller: string;
+  model: string;
+  promptKey: string;
+  run: () => Promise<T>;
+  tokensFromResult?: (r: T) => { promptTokens: number; completionTokens: number };
+  noCache?: boolean;
+}): Promise<T> {
+  const decision = await getCallGovernor().governed<T>({
+    caller: args.caller,
+    model: args.model,
+    prompt: args.promptKey,
+    run: args.run,
+    tokensFromResult: args.tokensFromResult,
+    noCache: args.noCache,
+  });
+  if (!decision.ok) throw new CallGovernorBlocked(decision.reason);
+  return decision.result;
 }
 
 export type LlmProvider = 'anthropic' | 'openai-codex';
@@ -30,19 +79,44 @@ export type LlmProvider = 'anthropic' | 'openai-codex';
 const ALL_PROVIDERS: LlmProvider[] = ['anthropic', 'openai-codex'];
 
 /**
- * Resolve the provider chain from LLM_PROVIDER. The env-var value sits
- * first; the rest fill in as fallbacks in stable order.
+ * Resolve the provider chain. Order of preference:
+ *   1. If the caller passed an explicit model id, infer the provider from it
+ *      (e.g. 'gpt-5.4' → openai-codex first, 'claude-opus-4-7' → anthropic
+ *      first). This lets the operator pick a model in Settings → Agent and
+ *      have it Just Work without separately editing LLM_PROVIDER.
+ *   2. Else honour the LLM_PROVIDER env var.
+ *   3. Else default to anthropic.
+ *
+ * The other provider is appended as a fallback in case the preferred one
+ * fails (e.g. depleted credits, dead network).
  */
-function getProviderChain(): LlmProvider[] {
-  const raw = (process.env.LLM_PROVIDER ?? 'anthropic').toLowerCase();
-  const preferred: LlmProvider =
-    raw === 'openai-codex' || raw === 'codex' ? 'openai-codex' : 'anthropic';
+function getProviderChain(modelHint?: string): LlmProvider[] {
+  const inferred = inferProviderFromModel(modelHint);
+  const envRaw = (process.env.LLM_PROVIDER ?? 'anthropic').toLowerCase();
+  const envPreferred: LlmProvider =
+    envRaw === 'openai-codex' || envRaw === 'codex' ? 'openai-codex' : 'anthropic';
+  const preferred: LlmProvider = inferred ?? envPreferred;
   const fallbacks = ALL_PROVIDERS.filter((p) => p !== preferred);
   return [preferred, ...fallbacks];
 }
 
+/**
+ * Guess which provider owns a model id. Returns null when the hint is
+ * unrecognized (caller should fall back to env var).
+ */
+function inferProviderFromModel(modelId: string | undefined): LlmProvider | null {
+  if (!modelId) return null;
+  const bare = modelId.includes('/') ? modelId.split('/').slice(-1)[0] : modelId;
+  const lower = bare.toLowerCase();
+  if (lower.startsWith('claude')) return 'anthropic';
+  if (lower.startsWith('gpt-') || lower.startsWith('o4-') || lower.startsWith('o5-') || lower.includes('codex')) {
+    return 'openai-codex';
+  }
+  return null;
+}
+
 export interface LlmAttempt {
-  provider: LlmProvider | 'anthropic-with-search';
+  provider: LlmProvider | 'anthropic-with-search' | 'call-governor';
   ok: boolean;
   error?: string;
   /** Best-guess remediation hint, surfaced when ok=false. */
@@ -122,7 +196,7 @@ export async function llmGenerateWithAttempts(
 ): Promise<{ text: string; provider: LlmProvider; attempts: LlmAttempt[] }> {
   const attempts: LlmAttempt[] = [];
 
-  for (const provider of getProviderChain()) {
+  for (const provider of getProviderChain(options?.model)) {
     // Skip a provider if it's not configured at all — record as unavailable
     // so the operator sees it in the attempt log without a noisy error.
     if (provider === 'anthropic' && !anthropicConfigured()) {
@@ -152,6 +226,19 @@ export async function llmGenerateWithAttempts(
       attempts.push({ provider, ok: true });
       return { text, provider, attempts };
     } catch (err) {
+      // Governor caps apply to the caller bucket — all providers share it.
+      // Falling through to the next provider would just hit the same cap,
+      // so record the block and short-circuit out of the chain.
+      if (err instanceof CallGovernorBlocked) {
+        attempts.push({
+          provider: 'call-governor',
+          ok: false,
+          error: err.reason,
+          workaround:
+            'Raise AGENT_SPEND_USD_PER_HOUR / AGENT_CALLS_PER_HOUR in engine/.env, wait for the window to roll, or restart the engine to reset the lifetime counter',
+        });
+        throw new AllProvidersFailed(attempts);
+      }
       attempts.push({
         provider,
         ok: false,
@@ -178,6 +265,7 @@ async function llmGenerateAnthropic(
     model = 'claude-sonnet-4-6',
     temperature = 0.7,
     maxTokens = 4096,
+    caller = 'pipeline.llm',
   } = options ?? {};
 
   const apiKey = process.env.ANTHROPIC_API_KEY ?? process.env.CLAUDE_API_KEY ?? '';
@@ -186,12 +274,31 @@ async function llmGenerateAnthropic(
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey });
 
-  const response = await client.messages.create({
+  const promptKey = JSON.stringify({
+    provider: 'anthropic',
     model,
-    max_tokens: maxTokens,
     temperature,
+    maxTokens,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
+    user: userPrompt,
+  });
+
+  const response = await withGovernor({
+    caller,
+    model,
+    promptKey,
+    run: () =>
+      client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    tokensFromResult: (r) => ({
+      promptTokens: r.usage?.input_tokens ?? 0,
+      completionTokens: r.usage?.output_tokens ?? 0,
+    }),
   });
 
   const texts: string[] = [];
@@ -212,30 +319,71 @@ async function llmGenerateOpenAICodex(
   userPrompt: string,
   options?: LlmOptions,
 ): Promise<string> {
-  const modelId =
-    options?.model ?? process.env.LLM_OPENAI_CODEX_MODEL ?? 'gpt-5.4';
+  // The caller may have passed a model id meant for Anthropic (e.g. when
+  // we fall through from Anthropic to Codex on a billing failure, the
+  // operator's `agent_profile.default_model` is still Anthropic-flavoured).
+  // Map unknown ids to the configured Codex default so we don't crash with
+  // "Cannot read properties of undefined (reading 'api')" inside pi-ai.
+  const requested = options?.model;
+  const codexDefault = process.env.LLM_OPENAI_CODEX_MODEL ?? 'gpt-5.4';
+  const caller = options?.caller ?? 'pipeline.llm';
 
   const [pi, { getCodexApiKey }] = await Promise.all([
-    import('@mariozechner/pi-ai') as Promise<{
+    import('@earendil-works/pi-ai') as Promise<{
       complete: (model: unknown, context: unknown, options?: unknown) => Promise<{
         content: Array<{ type: string; text?: string }>;
       }>;
       getModel: (provider: string, modelId: string) => unknown;
+      getModels: (provider: string) => Array<{ id: string }>;
     }>,
     import('../auth/codex-oauth.js'),
   ]);
 
+  // Resolve a Codex-known model id. Try the requested id first (in case the
+  // operator explicitly asked for a Codex model), then fall through to the
+  // env-configured default.
+  const knownCodexIds = new Set(pi.getModels('openai-codex').map((m) => m.id));
+  let modelId = codexDefault;
+  if (requested && knownCodexIds.has(requested)) {
+    modelId = requested;
+  } else if (!knownCodexIds.has(codexDefault)) {
+    // Even the env default isn't recognised — surface a useful error before
+    // calling pi.complete with undefined.
+    const sample = Array.from(knownCodexIds).slice(0, 5).join(', ');
+    throw new Error(
+      `Codex provider does not recognise model id '${codexDefault}'. ` +
+        `Set LLM_OPENAI_CODEX_MODEL to one of: ${sample}…`,
+    );
+  }
+
   const apiKey = await getCodexApiKey();
   const model = pi.getModel('openai-codex', modelId);
 
-  const response = await pi.complete(
-    model,
-    {
-      systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    },
-    { apiKey },
-  );
+  const promptKey = JSON.stringify({
+    provider: 'openai-codex',
+    model: modelId,
+    system: systemPrompt,
+    user: userPrompt,
+  });
+
+  // Codex flows through a ChatGPT subscription — no per-call USD cost the
+  // governor needs to track. Volume cap + dedupe + audit log still apply.
+  const response = await withGovernor({
+    caller,
+    model: modelId,
+    promptKey,
+    run: () =>
+      pi.complete(
+        model,
+        {
+          systemPrompt,
+          // pi-ai 0.75 makes timestamp required on UserMessage — pass
+          // Date.now() so we don't crash on Message validation.
+          messages: [{ role: 'user', content: userPrompt, timestamp: Date.now() }],
+        },
+        { apiKey },
+      ),
+  });
 
   const texts: string[] = [];
   for (const block of response.content) {
@@ -267,7 +415,7 @@ async function llmGenerateOpenAICodex(
 export async function llmGenerateWithSearch(
   systemPrompt: string,
   userPrompt: string,
-  options?: { model?: string; maxTokens?: number; maxContinuations?: number },
+  options?: { model?: string; maxTokens?: number; maxContinuations?: number; caller?: string },
 ): Promise<string> {
   const result = await llmGenerateWithSearchAndAttempts(systemPrompt, userPrompt, options);
   return result.text;
@@ -276,7 +424,7 @@ export async function llmGenerateWithSearch(
 export async function llmGenerateWithSearchAndAttempts(
   systemPrompt: string,
   userPrompt: string,
-  options?: { model?: string; maxTokens?: number; maxContinuations?: number },
+  options?: { model?: string; maxTokens?: number; maxContinuations?: number; caller?: string },
 ): Promise<{ text: string; usedSearch: boolean; attempts: LlmAttempt[] }> {
   const attempts: LlmAttempt[] = [];
 
@@ -288,6 +436,17 @@ export async function llmGenerateWithSearchAndAttempts(
       attempts.push({ provider: 'anthropic-with-search', ok: true });
       return { text, usedSearch: true, attempts };
     } catch (err) {
+      // Governor block — degraded fallback would hit the same cap. Surface.
+      if (err instanceof CallGovernorBlocked) {
+        attempts.push({
+          provider: 'call-governor',
+          ok: false,
+          error: err.reason,
+          workaround:
+            'Raise AGENT_SPEND_USD_PER_HOUR / AGENT_CALLS_PER_HOUR in engine/.env, wait for the window to roll, or restart the engine to reset the lifetime counter',
+        });
+        throw new AllProvidersFailed(attempts);
+      }
       attempts.push({
         provider: 'anthropic-with-search',
         ok: false,
@@ -312,6 +471,7 @@ export async function llmGenerateWithSearchAndAttempts(
   const sub = await llmGenerateWithAttempts(fallbackPrompt, userPrompt, {
     model: options?.model,
     maxTokens: options?.maxTokens,
+    caller: options?.caller ?? 'pipeline.research',
   });
   attempts.push(...sub.attempts);
   return { text: sub.text, usedSearch: false, attempts };
@@ -320,12 +480,13 @@ export async function llmGenerateWithSearchAndAttempts(
 async function anthropicWebSearch(
   systemPrompt: string,
   userPrompt: string,
-  options?: { model?: string; maxTokens?: number; maxContinuations?: number },
+  options?: { model?: string; maxTokens?: number; maxContinuations?: number; caller?: string },
 ): Promise<string> {
   const {
     model = 'claude-opus-4-7',
     maxTokens = 4096,
     maxContinuations = 5,
+    caller = 'pipeline.research',
   } = options ?? {};
 
   const apiKey = process.env.ANTHROPIC_API_KEY ?? process.env.CLAUDE_API_KEY ?? '';
@@ -341,12 +502,33 @@ async function anthropicWebSearch(
   let response: Anthropic.Message | undefined;
 
   for (let i = 0; i < maxContinuations; i++) {
-    response = await client.messages.create({
+    // Each continuation is a distinct billable call — govern each one
+    // separately. The promptKey reflects the growing message history, so
+    // the dedupe cache only hits when the *exact* turn re-occurs.
+    const turnPromptKey = JSON.stringify({
+      provider: 'anthropic-with-search',
       model,
-      max_tokens: maxTokens,
+      maxTokens,
+      turn: i,
       system: systemPrompt,
       messages,
-      tools: [{ type: 'web_search_20260209', name: 'web_search' }],
+    });
+    response = await withGovernor({
+      caller,
+      model,
+      promptKey: turnPromptKey,
+      run: () =>
+        client.messages.create({
+          model,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages,
+          tools: [{ type: 'web_search_20260209', name: 'web_search' }],
+        }),
+      tokensFromResult: (r) => ({
+        promptTokens: r.usage?.input_tokens ?? 0,
+        completionTokens: r.usage?.output_tokens ?? 0,
+      }),
     });
 
     if (response.stop_reason !== 'pause_turn') break;

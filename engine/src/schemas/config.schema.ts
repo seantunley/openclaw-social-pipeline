@@ -126,7 +126,7 @@ const postingWindowSchema = z.object({
 
 const postizConfigSchema = z.object({
   use_cli_or_api: z.enum(["cli", "api"]).default("api"),
-  default_integration_ids: z.record(platformEnum, z.string()).default({}),
+  default_integration_ids: z.partialRecord(platformEnum, z.string()).default({}),
   posting_windows: z.array(postingWindowSchema).default([
     { day: "mon", start_hour: 9, end_hour: 17, timezone: "UTC" },
     { day: "tue", start_hour: 9, end_hour: 17, timezone: "UTC" },
@@ -160,12 +160,12 @@ const pipelineConfigSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export const socialPipelineConfigSchema = z.object({
-  general: generalConfigSchema.default({}),
-  humanizer: humanizerConfigSchema.default({}),
-  marketing_psychology: marketingPsychologyConfigSchema.default({}),
-  media: mediaConfigSchema.default({}),
-  postiz: postizConfigSchema.default({}),
-  pipeline: pipelineConfigSchema.default({}),
+  general: generalConfigSchema.prefault({}),
+  humanizer: humanizerConfigSchema.prefault({}),
+  marketing_psychology: marketingPsychologyConfigSchema.prefault({}),
+  media: mediaConfigSchema.prefault({}),
+  postiz: postizConfigSchema.prefault({}),
+  pipeline: pipelineConfigSchema.prefault({}),
 });
 
 // ---------------------------------------------------------------------------

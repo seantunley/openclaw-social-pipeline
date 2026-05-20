@@ -31,7 +31,7 @@ export default function Overview() {
   };
 
   const chartData = (summary.statusBreakdown || []).map((s: any) => ({
-    name: s.status?.replace(/_/g, ' ') || '',
+    name: s.status ? t(`runs.status.${s.status}`) : '',
     count: s.count || 0,
     color: STATUS_COLORS[s.status] || '#71717a',
   }));
@@ -162,6 +162,7 @@ export default function Overview() {
                     color: '#f4f4f5',
                     fontSize: '13px',
                   }}
+                  formatter={(value) => [value as number, t('overview.chart.count')]}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {chartData.map((entry: any, i: number) => (

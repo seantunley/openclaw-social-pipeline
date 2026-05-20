@@ -150,6 +150,182 @@ export function selectMedia(runId: string, assetId: string) {
   });
 }
 
+// Upload an image/video from disk and attach it to the run's draft as a
+// new media asset. The browser builds the FormData; we bypass request<T>()
+// because that helper hard-sets JSON content-type — multipart needs the
+// browser to set its own boundary header.
+export async function uploadMedia(runId: string, file: File): Promise<{
+  ok: boolean;
+  asset_id: string;
+  hosted_url: string;
+  type: 'image' | 'video';
+}> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${BASE_URL}/runs/${runId}/media/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upload failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+// Attach an existing media asset (from any past run) to this run's draft.
+// The backend INSERTS a new row pointing at the same hosted_url — the
+// source asset stays linked to its original draft for audit.
+export function attachMedia(runId: string, sourceAssetId: string) {
+  return request<{ ok: boolean; asset_id: string; hosted_url: string }>(
+    `/runs/${runId}/media/attach`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ sourceAssetId }),
+    },
+  );
+}
+
+// ── Recurring schedules ──────────────────────────────────────────────────
+
+export interface CadencePayload {
+  kind?: 'daily' | 'weekly' | 'monthly' | 'cron';
+  hour?: number;
+  minute?: number;
+  day_of_week?: number[];
+  day_of_month?: number;
+  timezone?: string;
+  cron?: string;
+}
+
+export type ScheduleActionKind =
+  | 'run_pipeline'
+  | 'run_pipeline_multi'
+  | 'research_only'
+  | 'schedule_multi_day_campaign';
+
+export interface Schedule {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'paused' | 'cancelled';
+  cadence_kind: 'daily' | 'weekly' | 'monthly' | 'cron';
+  cadence_payload: CadencePayload;
+  cadence_source: string;
+  cadence_summary: string;
+  action_kind: ScheduleActionKind;
+  action_payload: Record<string, unknown>;
+  next_fire_at: string;
+  last_fire_at: string | null;
+  last_fire_status: string | null;
+  last_fire_message: string | null;
+  fire_count: number;
+  notify_chat: boolean;
+  notify_telegram: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function fetchSchedules(status?: 'active' | 'paused' | 'cancelled') {
+  const qs = status ? `?status=${status}` : '';
+  return request<{ schedules: Schedule[]; total: number }>(`/schedules${qs}`);
+}
+
+export function createSchedule(payload: {
+  name: string;
+  description?: string;
+  cadence: CadencePayload & { kind: 'daily' | 'weekly' | 'monthly' | 'cron' };
+  action: { kind: ScheduleActionKind; payload: Record<string, unknown> };
+  cadence_source?: string;
+  notify_chat?: boolean;
+  notify_telegram?: boolean;
+}) {
+  return request<{
+    ok: boolean;
+    schedule_id: string;
+    next_fire_at: string;
+    cadence_summary: string;
+  }>('/schedules', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateSchedule(
+  id: string,
+  patch: Partial<{
+    name: string;
+    description: string;
+    cadence: CadencePayload & { kind: 'daily' | 'weekly' | 'monthly' | 'cron' };
+    action: { kind: ScheduleActionKind; payload: Record<string, unknown> };
+    notify_chat: boolean;
+    notify_telegram: boolean;
+  }>,
+) {
+  return request<{ ok: boolean }>(`/schedules/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
+}
+
+export function deleteSchedule(id: string) {
+  return request<{ ok: boolean }>(`/schedules/${id}`, { method: 'DELETE' });
+}
+
+export function pauseSchedule(id: string) {
+  return request<{ ok: boolean }>(`/schedules/${id}/pause`, { method: 'POST' });
+}
+
+export function resumeSchedule(id: string) {
+  return request<{ ok: boolean; next_fire_at: string }>(
+    `/schedules/${id}/resume`,
+    { method: 'POST' },
+  );
+}
+
+export function runScheduleNow(id: string) {
+  return request<{ ok: boolean; summary: string; run_id: string | null }>(
+    `/schedules/${id}/run-now`,
+    { method: 'POST' },
+  );
+}
+
+export function fetchScheduleFires(id: string, limit = 50) {
+  return request<{
+    fires: Array<{
+      id: string;
+      schedule_id: string;
+      fired_at: string;
+      status: 'ok' | 'failed' | 'skipped';
+      message: string;
+      run_id: string | null;
+      result_payload: string;
+    }>;
+    total: number;
+  }>(`/schedules/${id}/fires?limit=${limit}`);
+}
+
+// List every media asset across runs — the Media Studio picker source.
+export function fetchMediaLibrary(type?: 'image' | 'video') {
+  const qs = type ? `?type=${type}` : '';
+  return request<{
+    media: Array<{
+      id: string;
+      url: string | null;
+      type: string;
+      status: string;
+      prompt: string | null;
+      provider: string | null;
+      aspectRatio: string | null;
+      createdAt: string;
+      runId: string | null;
+      platform: string | null;
+    }>;
+    total: number;
+  }>(`/media-assets${qs}`);
+}
+
 // Readability
 export function improveReadability(
   runId: string,

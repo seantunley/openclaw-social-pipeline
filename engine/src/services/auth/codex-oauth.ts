@@ -120,7 +120,7 @@ export async function getCodexApiKey(): Promise<string> {
     );
   }
 
-  const oauth = (await import('@mariozechner/pi-ai/oauth')) as {
+  const oauth = (await import('@earendil-works/pi-ai/oauth')) as {
     getOAuthApiKey(
       providerId: string,
       credentials: Record<string, OAuthCredentials>,

@@ -21,6 +21,7 @@ import {
   Link2,
   ShieldCheck,
   MessageCircle,
+  Bot,
 } from 'lucide-react';
 import {
   fetchConfig,
@@ -44,10 +45,11 @@ const PLATFORMS = [
   'threads', 'bluesky', 'pinterest', 'reddit', 'vk',
 ];
 
-type TabKey = 'auth' | 'pipeline' | 'integrations' | 'platforms' | 'import' | 'system';
+type TabKey = 'auth' | 'agent' | 'pipeline' | 'integrations' | 'platforms' | 'import' | 'system';
 
 const TABS: Array<{ key: TabKey; labelKey: string; icon: React.ComponentType<{ className?: string }> }> = [
   { key: 'auth', labelKey: 'settings.tabs.auth', icon: KeyRound },
+  { key: 'agent', labelKey: 'settings.tabs.agent', icon: Bot },
   { key: 'pipeline', labelKey: 'settings.tabs.pipeline', icon: Sliders },
   { key: 'integrations', labelKey: 'settings.tabs.integrations', icon: Plug },
   { key: 'platforms', labelKey: 'settings.tabs.platforms', icon: Layers },
@@ -95,6 +97,7 @@ export default function Settings() {
       </div>
 
       {activeTab === 'auth' && <AuthTab />}
+      {activeTab === 'agent' && <AgentTab onToast={setToast} />}
       {activeTab === 'pipeline' && <PipelineTab onToast={setToast} />}
       {activeTab === 'integrations' && <IntegrationsTab onToast={setToast} />}
       {activeTab === 'platforms' && <PlatformsTab />}
@@ -104,9 +107,270 @@ export default function Settings() {
   );
 }
 
+// ─── Agent tab ──────────────────────────────────────────────────────────────
+//
+// Per the original brief:
+//   "Goes in Settings → Agent as a new tab next to Auth / Pipeline / etc:
+//    - Name field (one input, used everywhere — Telegram replies sign as
+//      '— {name}', dashboard chat header shows it, Telegram bot bio)
+//    - System prompt editor (textarea, multi-line, with a 'test it' button)
+//    - Default model dropdown
+//    - Avatar / emoji selector (optional, low priority)"
+//
+
+// Models the agent can route to. Picking an Anthropic model makes the provider
+// chain try Anthropic first; picking a Codex model makes it try Codex first.
+// The chain itself falls through to the other provider on failure either way.
+const AGENT_MODELS: Array<{ group: string; options: Array<{ value: string; label: string }> }> = [
+  {
+    group: 'Anthropic (requires ANTHROPIC_API_KEY)',
+    options: [
+      { value: 'claude-opus-4-7', label: 'Claude Opus 4.7 (best quality)' },
+      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (balanced)' },
+      { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (fast / cheap)' },
+    ],
+  },
+  {
+    group: 'ChatGPT via Codex OAuth (no Anthropic key needed)',
+    options: [
+      { value: 'gpt-5.5', label: 'GPT-5.5 (latest)' },
+      { value: 'gpt-5.4', label: 'GPT-5.4 (default)' },
+      { value: 'gpt-5.4-mini', label: 'GPT-5.4 Mini (fast / cheap)' },
+      { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex' },
+      { value: 'gpt-5.3-codex-spark', label: 'GPT-5.3 Codex Spark' },
+      { value: 'gpt-5.2', label: 'GPT-5.2' },
+    ],
+  },
+];
+
+const AGENT_EMOJI_OPTIONS = ['🤖', '✨', '🦊', '🐙', '🦉', '🛰️', '⚡', '🌊', '🪐', '🧠'];
+
+interface AgentProfile {
+  name: string;
+  system_prompt: string;
+  default_model: string;
+  default_temperature: number;
+  max_steps: number;
+}
+
+function AgentTab({ onToast }: { onToast: (t: { kind: ToastKind; message: string } | null) => void }) {
+  const qc = useQueryClient();
+  const q = useQuery<{ profile: AgentProfile }>({
+    queryKey: ['agent-profile'],
+    queryFn: () => fetch('/api/social/agent/profile').then((r) => r.json()),
+  });
+
+  const [name, setName] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [model, setModel] = useState('claude-opus-4-7');
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxSteps, setMaxSteps] = useState(10);
+  const [emoji, setEmoji] = useState('🤖');
+  const [testInput, setTestInput] = useState('Hi — say one sentence about yourself.');
+  const [testOutput, setTestOutput] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    if (!q.data) return;
+    const p = q.data.profile;
+    // Parse a leading emoji out of name for the avatar slot.
+    const m = p.name.match(/^(\p{Extended_Pictographic})\s+(.*)$/u);
+    if (m) {
+      setEmoji(m[1]);
+      setName(m[2]);
+    } else {
+      setName(p.name);
+    }
+    setSystemPrompt(p.system_prompt);
+    setModel(p.default_model.replace(/^anthropic\//, ''));
+    setTemperature(p.default_temperature);
+    setMaxSteps(p.max_steps);
+  }, [q.data]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      fetch('/api/social/agent/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${emoji} ${name}`.trim(),
+          systemPrompt,
+          defaultModel: model,
+          defaultTemperature: temperature,
+          maxSteps,
+        }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      onToast({ kind: 'success', message: 'Agent profile saved.' });
+      qc.invalidateQueries({ queryKey: ['agent-profile'] });
+    },
+    onError: (err) => onToast({ kind: 'error', message: (err as Error).message }),
+  });
+
+  async function runTest() {
+    setTesting(true);
+    setTestOutput(null);
+    try {
+      const r = await fetch('/api/social/agent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: testInput,
+          surfaceRef: 'agent-test-' + Date.now(),
+          modelOverride: model,
+          temperatureOverride: temperature,
+        }),
+      });
+      const j = await r.json();
+      setTestOutput(j.reply ?? JSON.stringify(j));
+    } catch (err) {
+      setTestOutput(`Error: ${(err as Error).message}`);
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-border-strong bg-surface-soft p-5">
+        <h2 className="text-lg font-semibold text-primaryText mb-1">Agent identity</h2>
+        <p className="text-xs text-muted mb-4">
+          One persona, two surfaces — Telegram bot signs replies with this name, dashboard chat header shows it.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="text-xs">
+            <span className="text-muted">Name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Atlas, Nova, Sherlock"
+              className="mt-1 w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText"
+            />
+          </label>
+          <div className="text-xs">
+            <span className="text-muted">Avatar</span>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {AGENT_EMOJI_OPTIONS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setEmoji(e)}
+                  className={cn(
+                    'h-9 w-9 rounded-md border text-lg transition-colors',
+                    emoji === e
+                      ? 'border-brand-cyan bg-brand-cyan/10'
+                      : 'border-border-strong bg-surface-faint hover:bg-surface-soft',
+                  )}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="text-xs">
+            <span className="text-muted">System prompt (persona, role, constraints)</span>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              rows={8}
+              placeholder="You are a helpful agent assisting a single operator with their social media pipeline..."
+              className="mt-1 w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText font-mono"
+            />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <label className="text-xs">
+            <span className="text-muted">Default model</span>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText"
+            >
+              {AGENT_MODELS.map((group) => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.options.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs">
+            <span className="text-muted">Temperature</span>
+            <input
+              type="number"
+              step="0.1"
+              min={0}
+              max={2}
+              value={temperature}
+              onChange={(e) => setTemperature(Number(e.target.value))}
+              className="mt-1 w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText"
+            />
+          </label>
+          <label className="text-xs">
+            <span className="text-muted">Max tool-call steps</span>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={maxSteps}
+              onChange={(e) => setMaxSteps(Number(e.target.value))}
+              className="mt-1 w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText"
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !name.trim()}
+            className="rounded-md bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan px-4 py-2 text-sm hover:bg-brand-cyan/30 disabled:opacity-40 flex items-center gap-2"
+          >
+            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save agent profile
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border-strong bg-surface-soft p-5">
+        <h2 className="text-lg font-semibold text-primaryText mb-1">Test it</h2>
+        <p className="text-xs text-muted mb-4">
+          Sends a single message through the agent with the persona + model selected above. Saves changes implicitly? No — Save first if you've edited.
+        </p>
+        <input
+          value={testInput}
+          onChange={(e) => setTestInput(e.target.value)}
+          className="w-full rounded-md border border-border-strong bg-surface-faint px-3 py-2 text-sm text-secondaryText"
+        />
+        <button
+          onClick={runTest}
+          disabled={testing}
+          className="mt-3 rounded-md border border-border-strong bg-surface-faint px-3 py-1.5 text-xs text-secondaryText hover:bg-surface-soft hover:text-primaryText flex items-center gap-2"
+        >
+          {testing ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageCircle className="h-3 w-3" />}
+          Test it
+        </button>
+        {testOutput !== null && (
+          <pre className="mt-3 max-h-60 overflow-auto rounded-md bg-black/30 p-3 text-xs whitespace-pre-wrap text-secondaryText">
+            {testOutput}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Authentication tab ─────────────────────────────────────────────────────
 
 function AuthTab() {
+  const t = useT();
   const { data, isLoading } = useQuery({
     queryKey: ['env-status'],
     queryFn: fetchEnvStatus,
@@ -115,23 +379,23 @@ function AuthTab() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <Card title="Sign in with ChatGPT" subtitle="Wired ✓ — fully functional">
+      <Card title={t('settings.auth.codex_title')} subtitle={t('settings.auth.codex_subtitle')}>
         <CodexAuthCard />
       </Card>
 
       <Card
-        title="Environment variables"
-        subtitle="The bot reads secrets from engine/.env at runtime. Update the file and restart the API to change them — these can't be edited from the dashboard."
+        title={t('settings.auth.env_title')}
+        subtitle={t('settings.auth.env_subtitle')}
       >
         {isLoading ? (
           <Skeleton lines={6} />
         ) : (
           <div className="space-y-4">
-            <EnvGroup label="LLM" vars={data?.llm ?? []} />
-            <EnvGroup label="Media" vars={data?.media ?? []} />
-            <EnvGroup label="Postiz" vars={data?.postiz ?? []} />
-            <EnvGroup label="Telegram bot" vars={data?.telegram ?? []} />
-            <EnvGroup label="API" vars={data?.api ?? []} />
+            <EnvGroup label={t('settings.auth.group.llm')} vars={data?.llm ?? []} />
+            <EnvGroup label={t('settings.auth.group.media')} vars={data?.media ?? []} />
+            <EnvGroup label={t('settings.auth.group.postiz')} vars={data?.postiz ?? []} />
+            <EnvGroup label={t('settings.auth.group.telegram')} vars={data?.telegram ?? []} />
+            <EnvGroup label={t('settings.auth.group.api')} vars={data?.api ?? []} />
           </div>
         )}
       </Card>
@@ -140,6 +404,7 @@ function AuthTab() {
 }
 
 function EnvGroup({ label, vars }: { label: string; vars: EnvVarInfo[] }) {
+  const t = useT();
   return (
     <div>
       <p className="text-[11px] uppercase tracking-widest text-muted mb-2">{label}</p>
@@ -155,13 +420,13 @@ function EnvGroup({ label, vars }: { label: string; vars: EnvVarInfo[] }) {
                 <>
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   <span className="text-emerald-300">
-                    {v.value ? <code className="text-secondaryText">{v.value}</code> : `set (${v.length} chars)`}
+                    {v.value ? <code className="text-secondaryText">{v.value}</code> : t('settings.auth.set_chars', { length: v.length })}
                   </span>
                 </>
               ) : (
                 <>
                   <XCircle className="h-3.5 w-3.5 text-faint" />
-                  <span className="text-muted">not set</span>
+                  <span className="text-muted">{t('settings.auth.not_set')}</span>
                 </>
               )}
             </div>
@@ -175,6 +440,7 @@ function EnvGroup({ label, vars }: { label: string; vars: EnvVarInfo[] }) {
 // ─── Pipeline tab ───────────────────────────────────────────────────────────
 
 function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: string }) => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: config, isLoading } = useQuery({ queryKey: ['config'], queryFn: fetchConfig });
   const [form, setForm] = useState<any>({});
@@ -187,10 +453,10 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
     mutationFn: updateConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      onToast({ kind: 'success', message: 'Settings saved.' });
+      onToast({ kind: 'success', message: t('settings.toast.saved') });
     },
     onError: (err) => {
-      onToast({ kind: 'error', message: `Save failed: ${(err as Error).message}` });
+      onToast({ kind: 'error', message: t('settings.toast.save_failed', { error: (err as Error).message }) });
     },
   });
 
@@ -218,50 +484,50 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
           className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-50"
         >
           {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save
+          {t('settings.save')}
         </button>
       </div>
 
-      <Card title="General" subtitle="Run-level defaults.">
+      <Card title={t('settings.pipeline.general.title')} subtitle={t('settings.pipeline.general.subtitle')}>
         <Row>
           <MultiSelect
-            label="Default platforms"
+            label={t('settings.pipeline.general.default_platforms')}
             options={PLATFORMS}
             value={g.default_platforms || []}
             onChange={(v) => update('general', 'default_platforms', v)}
           />
-          <Status state="not-wired" note="Bot uses BOT_DEFAULT_PLATFORM env var instead." />
+          <Status state="not-wired" note={t('settings.pipeline.general.note_platforms')} />
         </Row>
         <Row>
           <NumberInput
-            label="Max variants per run"
+            label={t('settings.pipeline.general.max_variants')}
             value={g.max_variants || 3}
             onChange={(v) => update('general', 'max_variants', v)}
           />
-          <Status state="not-wired" note="Pipeline currently emits one variant; the multi-angle flow will use this." />
+          <Status state="not-wired" note={t('settings.pipeline.general.note_variants')} />
         </Row>
         <Row>
           <Toggle
-            label="Require approval before publish"
+            label={t('settings.pipeline.general.approval_required')}
             value={g.approval_required_before_publish ?? true}
             onChange={(v) => update('general', 'approval_required_before_publish', v)}
           />
-          <Status state="implicit" note="Approval is always required today — every run ends in pending_approval." />
+          <Status state="implicit" note={t('settings.pipeline.general.note_approval')} />
         </Row>
       </Card>
 
-      <Card title="Humanizer" subtitle="Strips AI writing tells from the draft.">
+      <Card title={t('settings.pipeline.humanizer.title')} subtitle={t('settings.pipeline.humanizer.subtitle')}>
         <Row>
           <Toggle
-            label="Enabled"
+            label={t('settings.pipeline.humanizer.enabled')}
             value={h.enabled ?? true}
             onChange={(v) => update('humanizer', 'enabled', v)}
           />
-          <Status state="not-wired" note="Pipeline always runs humanize. Wire to skip stage when false." />
+          <Status state="not-wired" note={t('settings.pipeline.humanizer.note_enabled')} />
         </Row>
         <Row>
           <NumberInput
-            label="Aggressiveness (1–10)"
+            label={t('settings.pipeline.humanizer.aggressiveness')}
             value={h.aggressiveness || 5}
             onChange={(v) => update('humanizer', 'aggressiveness', v)}
           />
@@ -269,10 +535,10 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
         </Row>
       </Card>
 
-      <Card title="Marketing psychology">
+      <Card title={t('settings.pipeline.marketing.title')}>
         <Row>
           <Toggle
-            label="Enabled"
+            label={t('settings.pipeline.marketing.enabled')}
             value={mp.enabled ?? true}
             onChange={(v) => update('marketing_psychology', 'enabled', v)}
           />
@@ -280,7 +546,7 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
         </Row>
         <Row>
           <NumberInput
-            label="Default intensity (1–10)"
+            label={t('settings.pipeline.marketing.intensity')}
             value={mp.default_intensity || 5}
             onChange={(v) => update('marketing_psychology', 'default_intensity', v)}
           />
@@ -288,36 +554,36 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
         </Row>
       </Card>
 
-      <Card title="Media generation">
+      <Card title={t('settings.pipeline.media.title')}>
         <Row>
           <SelectField
-            label="Default mode"
+            label={t('settings.pipeline.media.default_mode')}
             value={m.default_mode || 'image'}
             onChange={(v) => update('media', 'default_mode', v)}
             options={[
-              { value: 'image', label: 'Image' },
-              { value: 'video', label: 'Video' },
-              { value: 'both', label: 'Both' },
-              { value: 'none', label: 'None' },
+              { value: 'image', label: t('settings.pipeline.media.mode.image') },
+              { value: 'video', label: t('settings.pipeline.media.mode.video') },
+              { value: 'both', label: t('settings.pipeline.media.mode.both') },
+              { value: 'none', label: t('settings.pipeline.media.mode.none') },
             ]}
           />
-          <Status state="not-wired" note="Pipeline always generates one image at 1:1." />
+          <Status state="not-wired" note={t('settings.pipeline.media.note')} />
         </Row>
       </Card>
 
-      <Card title="Pipeline">
+      <Card title={t('settings.pipeline.pipeline_section.title')}>
         <Row>
           <NumberInput
-            label="Stage retry limit"
+            label={t('settings.pipeline.pipeline_section.retry_limit')}
             value={pl.stage_retry_limits || 3}
             onChange={(v) => update('pipeline', 'stage_retry_limits', v)}
             max={10}
           />
-          <Status state="not-wired" note="Pipeline doesn't auto-retry stages today." />
+          <Status state="not-wired" note={t('settings.pipeline.pipeline_section.note_retry')} />
         </Row>
         <Row>
           <Toggle
-            label="Auto analytics sync"
+            label={t('settings.pipeline.pipeline_section.auto_analytics')}
             value={pl.auto_analytics_sync ?? true}
             onChange={(v) => update('pipeline', 'auto_analytics_sync', v)}
           />
@@ -331,6 +597,7 @@ function PipelineTab({ onToast }: { onToast: (t: { kind: ToastKind; message: str
 // ─── Integrations tab ────────────────────────────────────────────────────────
 
 function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message: string }) => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: config, isLoading } = useQuery({ queryKey: ['config'], queryFn: fetchConfig });
   const [form, setForm] = useState<any>({});
@@ -343,7 +610,7 @@ function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message:
     mutationFn: updateConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      onToast({ kind: 'success', message: 'Saved (preferences only — env vars take precedence at runtime).' });
+      onToast({ kind: 'success', message: t('settings.toast.preferences_saved') });
     },
   });
 
@@ -361,8 +628,8 @@ function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message:
   return (
     <div className="space-y-6 max-w-3xl">
       <Card
-        title="Postiz"
-        subtitle="At runtime the engine reads POSTIZ_MODE / POSTIZ_API_URL / POSTIZ_API_KEY from engine/.env. These dashboard fields are stored as preferences for now and don't override the env vars."
+        title={t('settings.integrations.postiz.title')}
+        subtitle={t('settings.integrations.postiz.subtitle')}
       >
         <div className="flex justify-end mb-2">
           <button
@@ -371,24 +638,24 @@ function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message:
             className="flex items-center gap-2 rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 disabled:opacity-50"
           >
             {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            Save preferences
+            {t('settings.save_preferences')}
           </button>
         </div>
         <Row>
           <SelectField
-            label="Adapter mode"
+            label={t('settings.integrations.postiz.adapter_mode')}
             value={pz.use_cli_or_api || 'api'}
             onChange={(v) => update('postiz', 'use_cli_or_api', v)}
             options={[
-              { value: 'api', label: 'API' },
-              { value: 'cli', label: 'CLI' },
+              { value: 'api', label: t('settings.integrations.postiz.adapter.api') },
+              { value: 'cli', label: t('settings.integrations.postiz.adapter.cli') },
             ]}
           />
           <Status state="not-wired" />
         </Row>
         <Row>
           <TextInput
-            label="API base URL"
+            label={t('settings.integrations.postiz.api_base_url')}
             value={pz.api_base_url || ''}
             onChange={(v) => update('postiz', 'api_base_url', v)}
             placeholder="http://localhost:5000"
@@ -398,12 +665,11 @@ function IntegrationsTab({ onToast }: { onToast: (t: { kind: ToastKind; message:
       </Card>
 
       <Card
-        title="Image generation"
-        subtitle="Order of providers tried at runtime: fal.ai → OpenAI gpt-image-1. Configure keys in engine/.env (FAL_API_KEY, OPENAI_API_KEY)."
+        title={t('settings.integrations.image_gen.title')}
+        subtitle={t('settings.integrations.image_gen.subtitle')}
       >
         <p className="text-xs text-muted">
-          No editable fields here yet — provider order is hard-coded with graceful fallback. The
-          first working provider wins; if both fail, the pipeline still produces text-only output.
+          {t('settings.integrations.image_gen.body')}
         </p>
       </Card>
     </div>
@@ -779,6 +1045,7 @@ function ImportTab({ onToast }: { onToast: (t: { kind: ToastKind; message: strin
 }
 
 function BatchRow({ batch, onDelete }: { batch: ImportBatch; onDelete: () => void }) {
+  const t = useT();
   const spec = getPlatformSpec(batch.platform);
   const date = new Date(batch.created_at).toLocaleString();
   return (
@@ -794,7 +1061,7 @@ function BatchRow({ batch, onDelete }: { batch: ImportBatch; onDelete: () => voi
         type="button"
         onClick={onDelete}
         className="flex items-center gap-1.5 rounded-md p-1.5 text-muted hover:bg-surface-soft hover:text-rose-400"
-        aria-label="Delete batch"
+        aria-label={t('settings.import.delete_aria')}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
@@ -896,10 +1163,11 @@ function Row({ children }: { children: React.ReactNode }) {
 }
 
 function Status({ state, note }: { state: 'wired' | 'implicit' | 'not-wired'; note?: string }) {
+  const t = useT();
   const map = {
-    wired: { label: 'Wired', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-    implicit: { label: 'Implicit', color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30' },
-    'not-wired': { label: 'Not wired yet', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+    wired: { label: t('settings.status_badge.wired'), color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+    implicit: { label: t('settings.status_badge.implicit'), color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30' },
+    'not-wired': { label: t('settings.status_badge.not_wired'), color: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
   };
   const { label, color } = map[state];
   return (

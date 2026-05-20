@@ -413,6 +413,23 @@ Return ONLY the JSON object — no markdown, no preamble.`;
   }
 }
 
+// ─── carousel caption cleanup ───────────────────────────────────────────────
+//
+// The draft body carries `## Slide N` / `**Slide N**` / `---` markers so the
+// media stage can split text and generate one image per slide. Instagram /
+// Facebook / LinkedIn carousels publish with ONE caption under the cover
+// post — the per-slide structure must NOT leak into that caption. Run this
+// after the media stage has consumed the markers but before the caption is
+// flipped to 'ready' or sent to Postiz.
+function stripCarouselMarkers(body: string): string {
+  return body
+    .replace(/^\s*##?\s*Slide\s+\d+\s*$/gim, '')
+    .replace(/^\s*\*\*Slide\s+\d+\*\*\s*$/gim, '')
+    .replace(/^\s*---\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // ─── pipeline ───────────────────────────────────────────────────────────────
 
 export interface RunBotPipelineOptions {
@@ -422,6 +439,13 @@ export interface RunBotPipelineOptions {
    * Falls through to the platform default when omitted or unknown.
    */
   format?: string | null;
+  /**
+   * When true on carousel runs, the image-gen prompts instruct the model
+   * to render the slide's text directly INTO each image (burned-in
+   * typography on the JPEG). Default false — images are pure visuals and
+   * text lives only in the caption. Ignored on non-carousel formats.
+   */
+  textOverlay?: boolean;
   /**
    * Fired synchronously immediately after the run row is inserted, so
    * fire-and-forget callers (the dashboard `/runs/start` endpoint) can
@@ -678,6 +702,7 @@ export async function runBotPipeline(
         platform,
         aspectRatio: mediaAspect,
         format: formatForMedia,
+        textOverlay: options.textOverlay && isCarousel ? true : false,
       });
     } catch (err) {
       // Every provider failed. Persist the rich AllImageProvidersFailed
@@ -685,9 +710,25 @@ export async function runBotPipeline(
       // (top up credits, codex login, switch IMAGE_PROVIDER, etc.) — but
       // keep the run alive at pending_approval so they can publish
       // text-only or click "regenerate media" once they've fixed it.
+      //
+      // CRITICAL: we still preserve the EDITORIAL PROMPT that was built
+      // before the providers errored out. Without this the regenerate UI
+      // would show the generic "Social image for: <topic>" fallback, and
+      // the operator couldn't tell whether the tuned prompt builder ran
+      // at all. Pulling it off the typed AllImageProvidersFailed instance.
       const message = err instanceof Error ? err.message : String(err);
-      const attempts = (err as { attempts?: ImageAttempt[] }).attempts ?? [];
-      mediaResult = { url: '', urls: [], prompts: [], provider: 'none', attempts };
+      const errAttempts = (err as { attempts?: ImageAttempt[] }).attempts ?? [];
+      const attemptedPrompt =
+        typeof (err as { attemptedPrompt?: string }).attemptedPrompt === 'string'
+          ? (err as { attemptedPrompt: string }).attemptedPrompt
+          : '';
+      mediaResult = {
+        url: '',
+        urls: [],
+        prompts: attemptedPrompt ? [attemptedPrompt] : [],
+        provider: 'none',
+        attempts: errAttempts,
+      };
       failStage(db, runId, 'media', message);
       await hooks.onProgress?.(`⚠️ Image generation failed — see run details for next steps`);
     }
@@ -769,10 +810,32 @@ export async function runBotPipeline(
     // failStage was already called inside the catch block above when the
     // orchestrator threw — don't double-record.
 
-    db.update(socialDraft)
-      .set({ status: 'ready', updated_at: now() })
-      .where(eq(socialDraft.id, draftId))
-      .run();
+    // ── post-process carousel caption ───────────────────────────────────────
+    // The draft body carries `## Slide N` / `---` markers so the media stage
+    // can fan out per-slide images. Instagram (and FB / LinkedIn) carousels
+    // only have ONE caption under the cover post, so those markers must be
+    // stripped before the caption is shown to a viewer or sent to Postiz.
+    // We do this AFTER the media stage so slide parsing still works, but
+    // BEFORE the draft flips to 'ready' so the published caption is clean.
+    const publishedContent = isCarousel
+      ? stripCarouselMarkers(finalContent)
+      : finalContent;
+    if (isCarousel && publishedContent !== finalContent) {
+      db.update(socialDraft)
+        .set({
+          final_content: publishedContent,
+          character_count: publishedContent.length,
+          status: 'ready',
+          updated_at: now(),
+        })
+        .where(eq(socialDraft.id, draftId))
+        .run();
+    } else {
+      db.update(socialDraft)
+        .set({ status: 'ready', updated_at: now() })
+        .where(eq(socialDraft.id, draftId))
+        .run();
+    }
 
     // ── approve stage: leave pending; operator decides next ─────────────────
     // Run status moves to 'pending_approval' so the dashboard's Approval tab
@@ -792,7 +855,7 @@ export async function runBotPipeline(
       assetId,
       topic,
       platform,
-      content: finalContent,
+      content: publishedContent,
       imageUrl,
       scores: {
         seo_score: numeric(seoGeo.seo_score),

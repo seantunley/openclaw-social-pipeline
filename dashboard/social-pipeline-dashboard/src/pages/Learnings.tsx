@@ -39,12 +39,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   psychology: 'text-violet-400 bg-violet-500/15',
 };
 
-const SOURCE_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
-  draft_edit: { icon: <Pencil className="w-3 h-3" />, label: 'From Edit' },
-  rejection: { icon: <X className="w-3 h-3" />, label: 'From Rejection' },
-  revision_request: { icon: <MessageCircle className="w-3 h-3" />, label: 'From Revision' },
-  analytics: { icon: <BarChart3 className="w-3 h-3" />, label: 'From Analytics' },
-  operator_rule: { icon: <Shield className="w-3 h-3" />, label: 'Operator Rule' },
+const SOURCE_ICONS: Record<string, React.ReactNode> = {
+  draft_edit: <Pencil className="w-3 h-3" />,
+  rejection: <X className="w-3 h-3" />,
+  revision_request: <MessageCircle className="w-3 h-3" />,
+  analytics: <BarChart3 className="w-3 h-3" />,
+  operator_rule: <Shield className="w-3 h-3" />,
 };
 
 function ConfidenceBar({ value }: { value: number }) {
@@ -123,18 +123,18 @@ export default function LearningsPage() {
             filter === 'all' ? 'bg-surface-medium text-white' : 'bg-surface-faint text-muted hover:text-secondaryText'
           )}
         >
-          All ({learnings.length})
+          {t('learnings.filter.all')} ({learnings.length})
         </button>
         {CATEGORIES.filter((c) => grouped[c]?.length).map((cat) => (
           <button
             key={cat}
             onClick={() => setFilter(cat)}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-xs capitalize transition-colors',
+              'px-3 py-1.5 rounded-lg text-xs transition-colors',
               filter === cat ? 'bg-surface-medium text-white' : 'bg-surface-faint text-muted hover:text-secondaryText'
             )}
           >
-            {cat} ({grouped[cat]?.length ?? 0})
+            {t(`learnings.category.${cat}`)} ({grouped[cat]?.length ?? 0})
           </button>
         ))}
       </div>
@@ -148,14 +148,15 @@ export default function LearningsPage() {
           <Brain className="h-10 w-10 text-faint mx-auto mb-3" />
           <p className="text-sm text-muted">{t('learnings.empty')}</p>
           <p className="text-xs text-faint mt-1">
-            The system learns from draft edits, rejections, and analytics performance
+            {t('learnings.empty_hint')}
           </p>
         </div>
       ) : (
         <div className="space-y-2">
           {(filter === 'all' ? learnings : learnings.filter((l: any) => l.category === filter)).map((learning: any) => {
             const catColor = CATEGORY_COLORS[learning.category] ?? 'text-muted bg-zinc-500/15';
-            const source = SOURCE_ICONS[learning.source_type] ?? SOURCE_ICONS.operator_rule;
+            const sourceIcon = SOURCE_ICONS[learning.source_type] ?? SOURCE_ICONS.operator_rule;
+            const sourceLabel = t(`learnings.source.${learning.source_type ?? 'operator_rule'}`);
 
             return (
               <div
@@ -168,8 +169,8 @@ export default function LearningsPage() {
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full capitalize', catColor)}>
-                        {learning.category}
+                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full', catColor)}>
+                        {t(`learnings.category.${learning.category}`)}
                       </span>
                       {learning.platform && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-muted">
@@ -177,11 +178,11 @@ export default function LearningsPage() {
                         </span>
                       )}
                       <span className="text-[10px] text-faint flex items-center gap-1">
-                        {source.icon} {source.label}
+                        {sourceIcon} {sourceLabel}
                       </span>
                       {learning.reinforcement_count > 1 && (
                         <span className="text-[10px] text-faint flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" /> {learning.reinforcement_count}x reinforced
+                          <TrendingUp className="w-3 h-3" /> {t('learnings.reinforced', { count: learning.reinforcement_count })}
                         </span>
                       )}
                     </div>
@@ -203,7 +204,7 @@ export default function LearningsPage() {
                       <button
                         onClick={() => deactivateMutation.mutate(learning.id)}
                         className="text-faint hover:text-red-400 transition-colors"
-                        title="Deactivate"
+                        title={t('learnings.deactivate')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -221,7 +222,7 @@ export default function LearningsPage() {
         <Modal open={showAddModal} onClose={() => setShowAddModal(false)}>
           <h3 className="text-lg font-semibold text-primaryText mb-4">{t('learnings.add_modal.title')}</h3>
           <p className="text-xs text-muted mb-4">
-            Explicit rules have 100% confidence and never decay. Use for hard brand rules.
+            {t('learnings.add_modal.helper')}
           </p>
           <div className="space-y-4">
             <div>
@@ -232,25 +233,25 @@ export default function LearningsPage() {
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{t(`learnings.category.${c}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted block mb-1">Platform (optional)</label>
+              <label className="text-xs text-muted block mb-1">{t('learnings.add_modal.platform_label')}</label>
               <input
                 value={newRule.platform}
                 onChange={(e) => setNewRule({ ...newRule, platform: e.target.value })}
-                placeholder="e.g. linkedin (leave empty for all)"
+                placeholder={t('learnings.add_modal.platform_placeholder')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint"
               />
             </div>
             <div>
-              <label className="text-xs text-muted block mb-1">Rule</label>
+              <label className="text-xs text-muted block mb-1">{t('learnings.add_modal.rule_label')}</label>
               <textarea
                 value={newRule.content}
                 onChange={(e) => setNewRule({ ...newRule, content: e.target.value })}
-                placeholder="e.g. Never use clickbait headlines on LinkedIn"
+                placeholder={t('learnings.add_modal.rule_placeholder')}
                 rows={3}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-secondaryText placeholder:text-faint resize-none"
               />

@@ -13,6 +13,7 @@
  * map it in i18n.tsx's LOCALES.
  */
 
+import type React from 'react';
 import type { LocaleId } from '@/lib/i18n';
 
 interface FlagProps {
@@ -44,7 +45,7 @@ export default function Flag({ id, size = 16, className }: FlagProps) {
   );
 }
 
-const FLAGS: Record<LocaleId, JSX.Element> = {
+const FLAGS: Record<LocaleId, React.JSX.Element> = {
   // Union Jack — three crosses (St George red, St Andrew white-on-blue, St
   // Patrick red diagonal). Simplified to the standard 30:20 ratio.
   en: (

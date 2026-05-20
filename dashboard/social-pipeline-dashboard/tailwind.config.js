@@ -43,9 +43,14 @@ export default {
           '0%, 100%': { opacity: '0.4' },
           '50%': { opacity: '0.8' },
         },
+        'thinking-dot': {
+          '0%, 80%, 100%': { opacity: '0.25', transform: 'translateY(0)' },
+          '40%': { opacity: '1', transform: 'translateY(-2px)' },
+        },
       },
       animation: {
         'skeleton-pulse': 'skeleton-pulse 2s ease-in-out infinite',
+        'thinking-dot': 'thinking-dot 1.2s ease-in-out infinite',
       },
     },
   },

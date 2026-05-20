@@ -45,6 +45,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 
 /* --- Draggable calendar item --- */
 function CalendarItem({ item, compact }: { item: any; compact?: boolean }) {
+  const t = useT();
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: 'schedule',
@@ -80,7 +81,7 @@ function CalendarItem({ item, compact }: { item: any; compact?: boolean }) {
       >
         <div className="flex items-center gap-2 mb-1">
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${status.bg} ${status.text}`}>
-            {item.status}
+            {t(`runs.status.${item.status}`)}
           </span>
           {item.platform && (
             <span className="text-[10px] text-muted capitalize">{item.platform}</span>

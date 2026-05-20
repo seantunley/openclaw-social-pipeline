@@ -1,9 +1,16 @@
-import { Heart, MessageCircle, Send, Bookmark, ThumbsUp, MoreHorizontal, Image as ImageIcon, Globe, Repeat2 } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, MessageCircle, Send, Bookmark, ThumbsUp, MoreHorizontal, Image as ImageIcon, Globe, Repeat2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PostPreviewProps {
   platform: string;
   content: string;
   mediaUrl?: string | null;
+  /**
+   * Carousel slide URLs in author order (cover = index 0). When provided
+   * and length > 1, the preview renders a swipeable strip with dots
+   * indicator. `mediaUrl` is ignored in that case.
+   */
+  mediaUrls?: string[];
   brandName?: string;
   brandHandle?: string;
 }
@@ -15,29 +22,104 @@ interface PostPreviewProps {
  * not pixel-perfect. The point is to let the operator see structure + length
  * + line breaks + hashtag placement before publishing.
  */
+/**
+ * Strip slide-divider markup (`## Slide N`, `**Slide N**`, `---` rules) and
+ * collapse the per-slide text blocks. Used when rendering carousel captions
+ * — Instagram carousels have ONE caption under the cover post, so the
+ * slide-structure markers that drove image generation must not leak into
+ * the visible copy. Single-image runs pass through unchanged.
+ */
+function stripCarouselMarkers(body: string): string {
+  return body
+    // Drop slide heading lines entirely: "## Slide 1", "**Slide 2**", etc.
+    .replace(/^\s*##?\s*Slide\s+\d+\s*$/gim, '')
+    .replace(/^\s*\*\*Slide\s+\d+\*\*\s*$/gim, '')
+    // Drop standalone horizontal rules used as slide dividers.
+    .replace(/^\s*---\s*$/gm, '')
+    // Collapse runs of blank lines left behind.
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export default function PostPreview({
   platform,
   content,
   mediaUrl,
+  mediaUrls,
   brandName = 'Your Brand',
   brandHandle = 'yourbrand',
 }: PostPreviewProps) {
   const p = platform.toLowerCase();
+  const isCarousel = Array.isArray(mediaUrls) && mediaUrls.length > 1;
+  const effectiveUrl = mediaUrl ?? mediaUrls?.[0] ?? null;
+  const displayContent = isCarousel ? stripCarouselMarkers(content) : content;
 
   if (p === 'instagram' || p === 'instagram_reel' || p === 'instagram_carousel') {
-    return <InstagramPreview content={content} mediaUrl={mediaUrl} brandHandle={brandHandle} />;
+    return <InstagramPreview content={displayContent} mediaUrl={effectiveUrl} mediaUrls={isCarousel ? mediaUrls : undefined} brandHandle={brandHandle} />;
   }
   if (p === 'facebook') {
-    return <FacebookPreview content={content} mediaUrl={mediaUrl} brandName={brandName} />;
+    return <FacebookPreview content={displayContent} mediaUrl={effectiveUrl} mediaUrls={isCarousel ? mediaUrls : undefined} brandName={brandName} />;
   }
   if (p === 'linkedin') {
-    return <LinkedInPreview content={content} mediaUrl={mediaUrl} brandName={brandName} />;
+    return <LinkedInPreview content={displayContent} mediaUrl={effectiveUrl} mediaUrls={isCarousel ? mediaUrls : undefined} brandName={brandName} />;
   }
   if (p === 'twitter' || p === 'x') {
-    return <TwitterPreview content={content} mediaUrl={mediaUrl} brandName={brandName} brandHandle={brandHandle} />;
+    return <TwitterPreview content={displayContent} mediaUrl={effectiveUrl} brandName={brandName} brandHandle={brandHandle} />;
   }
   // Fallback: clean text card
-  return <GenericPreview content={content} mediaUrl={mediaUrl} brandName={brandName} platform={platform} />;
+  return <GenericPreview content={displayContent} mediaUrl={effectiveUrl} brandName={brandName} platform={platform} />;
+}
+
+/**
+ * Reusable swipeable carousel viewer. Used inside platform-specific previews
+ * that support carousels (IG, FB, LinkedIn). Operator can click the chevrons
+ * or the dots to step through; we don't bother with real swipe gestures
+ * since this is a preview, not the published surface.
+ */
+function CarouselViewer({ urls, aspect = 'aspect-square' }: { urls: string[]; aspect?: string }) {
+  const [idx, setIdx] = useState(0);
+  const total = urls.length;
+  const current = urls[idx];
+  const prev = () => setIdx((i) => (i - 1 + total) % total);
+  const next = () => setIdx((i) => (i + 1) % total);
+  return (
+    <div className={`relative w-full ${aspect} overflow-hidden bg-zinc-900`}>
+      {current ? (
+        <img src={current} alt={`slide ${idx + 1}`} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted">
+          <ImageIcon className="h-12 w-12" />
+        </div>
+      )}
+      <button
+        onClick={prev}
+        aria-label="previous slide"
+        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1 text-white opacity-80 hover:opacity-100"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <button
+        onClick={next}
+        aria-label="next slide"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1 text-white opacity-80 hover:opacity-100"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+      <div className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+        {idx + 1} / {total}
+      </div>
+      <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
+        {urls.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            aria-label={`go to slide ${i + 1}`}
+            className={`h-1.5 w-1.5 rounded-full transition-opacity ${i === idx ? 'bg-white' : 'bg-white/50'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Avatar({ initials, color }: { initials: string; color: string }) {
@@ -63,7 +145,7 @@ function MediaPlaceholder({ aspect = 'aspect-square' }: { aspect?: string }) {
 
 // ── Instagram ────────────────────────────────────────────────────────────────
 
-function InstagramPreview({ content, mediaUrl, brandHandle }: { content: string; mediaUrl?: string | null; brandHandle: string }) {
+function InstagramPreview({ content, mediaUrl, mediaUrls, brandHandle }: { content: string; mediaUrl?: string | null; mediaUrls?: string[]; brandHandle: string }) {
   const lines = content.split('\n');
   const firstLine = lines[0];
   const rest = lines.slice(1).join('\n');
@@ -81,7 +163,9 @@ function InstagramPreview({ content, mediaUrl, brandHandle }: { content: string;
         <MoreHorizontal className="h-5 w-5 text-faint" />
       </div>
 
-      {mediaUrl ? (
+      {mediaUrls && mediaUrls.length > 1 ? (
+        <CarouselViewer urls={mediaUrls} aspect="aspect-square" />
+      ) : mediaUrl ? (
         <img src={mediaUrl} alt="" className="aspect-square w-full object-cover" />
       ) : (
         <MediaPlaceholder aspect="aspect-square" />
@@ -111,7 +195,7 @@ function InstagramPreview({ content, mediaUrl, brandHandle }: { content: string;
 
 // ── Facebook ─────────────────────────────────────────────────────────────────
 
-function FacebookPreview({ content, mediaUrl, brandName }: { content: string; mediaUrl?: string | null; brandName: string }) {
+function FacebookPreview({ content, mediaUrl, mediaUrls, brandName }: { content: string; mediaUrl?: string | null; mediaUrls?: string[]; brandName: string }) {
   return (
     <div className="mx-auto max-w-md overflow-hidden rounded-lg border border-zinc-300/30 bg-white text-black shadow-2xl font-sans">
       <div className="flex items-center gap-3 px-4 py-3">
@@ -131,7 +215,9 @@ function FacebookPreview({ content, mediaUrl, brandName }: { content: string; me
         {content}
       </div>
 
-      {mediaUrl ? (
+      {mediaUrls && mediaUrls.length > 1 ? (
+        <CarouselViewer urls={mediaUrls} aspect="aspect-[4/3]" />
+      ) : mediaUrl ? (
         <img src={mediaUrl} alt="" className="w-full object-cover" />
       ) : (
         <MediaPlaceholder aspect="aspect-[4/3]" />
@@ -157,7 +243,7 @@ function FacebookPreview({ content, mediaUrl, brandName }: { content: string; me
 
 // ── LinkedIn ─────────────────────────────────────────────────────────────────
 
-function LinkedInPreview({ content, mediaUrl, brandName }: { content: string; mediaUrl?: string | null; brandName: string }) {
+function LinkedInPreview({ content, mediaUrl, mediaUrls, brandName }: { content: string; mediaUrl?: string | null; mediaUrls?: string[]; brandName: string }) {
   return (
     <div className="mx-auto max-w-md overflow-hidden rounded-lg border border-zinc-300/30 bg-white text-black shadow-2xl">
       <div className="flex items-start gap-3 px-4 py-3">
@@ -177,7 +263,9 @@ function LinkedInPreview({ content, mediaUrl, brandName }: { content: string; me
         {content}
       </div>
 
-      {mediaUrl ? (
+      {mediaUrls && mediaUrls.length > 1 ? (
+        <CarouselViewer urls={mediaUrls} aspect="aspect-square" />
+      ) : mediaUrl ? (
         <img src={mediaUrl} alt="" className="w-full object-cover" />
       ) : (
         <MediaPlaceholder aspect="aspect-square" />
