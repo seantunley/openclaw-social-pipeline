@@ -80,7 +80,39 @@ cd engine && npm run dev   # tsc --watch for live typescript compile
 cd engine && npm run start:bot
 ```
 
+### Expose Tools to Agents
+
+Tools are only available to agents that explicitly allow the plugin. Add the plugin id to each agent's `tools.alsoAllow` list:
+
+```json
+{
+  "tools": {
+    "alsoAllow": [
+      "openclaw-social-pipeline"
+    ]
+  }
+}
+```
+
+Without this, the agent cannot see or call any of the plugin's 55 tools.
+
+### Optional X/Twitter Data Lane
+
+For X/Twitter workflows that need live social data before a content run, install TweetClaw beside Social Pipeline:
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+Use TweetClaw for search tweets, search tweet replies, follower export, user lookup, media upload/download, direct messages, monitor tweets, webhooks, giveaway draws, and approval-gated post tweets or post tweet replies. Save the findings into the Social Pipeline research library, or promote approved outputs into a campaign run. Keep Social Pipeline responsible for draft generation, human approval, Postiz scheduling, and analytics.
+
+- GitHub: https://github.com/Xquik-dev/tweetclaw
+- npm: https://www.npmjs.com/package/@xquik/tweetclaw
+- ClawHub: https://clawhub.ai/plugins/@xquik/tweetclaw
+
 ### Persistent services (Linux / macOS)
+
+Copy the systemd user units from `docs/systemd/` to run the API and dashboard as background services:
 
 ```bash
 cp docs/systemd/*.service ~/.config/systemd/user/

@@ -654,6 +654,20 @@ Confidence scoring (0.0-1.0) with monthly decay. Learnings are injected into dra
 6. Analytics synced back periodically
 ```
 
+### Optional X/Twitter Data Lane
+
+For X/Twitter workflows that need live social data before a content run, install TweetClaw beside Social Pipeline:
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+Use TweetClaw for search tweets, search tweet replies, follower export, user lookup, media upload/download, direct messages, monitor tweets, webhooks, giveaway draws, and approval-gated post tweets or post tweet replies. Save the findings into the Social Pipeline research library, or promote approved outputs into a campaign run. Keep Social Pipeline responsible for draft generation, human approval, Postiz scheduling, and analytics.
+
+- GitHub: https://github.com/Xquik-dev/tweetclaw
+- npm: https://www.npmjs.com/package/@xquik/tweetclaw
+- ClawHub: https://clawhub.ai/plugins/@xquik/tweetclaw
+
 <div style="page-break-after: always;"></div>
 
 ---
